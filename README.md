@@ -41,7 +41,7 @@ Script to compile the dyndat source (for LINUX and MAC, text format) [complt](ht
 *Note: To unzip the linux/mac version of the source, type: tar xvfz dynacv7r2_source.tar.gz*
 
 **OTHER DYNAC UTILITIES**  
-[DGUI](https://github.com/dynac-source/DYNAC-download/blob/main/README.md#dgui-v2r2-download), a DYNAC Graphical User Interface.  
+[DGUI](https://github.com/dynac-source/DYNAC-download/blob/main/README.md#dgui-v2r3-download), a DYNAC Graphical User Interface.  
 [ptq2dyn.f](https://github.com/dynac-source/DYNAC-download/blob/main/ptq2dyn.f) : prepares the input data file used by the RFQPTQ card. Source file in text format, compile with:  
 *gfortran ptq2dyn.f -o ptq2dyn*  
 An alternative to the above mentioned DYNAC GUI has been developed at [MSU](https://github.com/NSCLAlt/DynacGUI).
