@@ -21,7 +21,7 @@ The charge stripper model requires further development (e.g. energy loss model).
 DYNAC source, data, plot and help files (for WINDOWS, ZIP format) [dynacv7r1_w.zip](https://github.com/dynac-source/DYNAC-download/files/7769406/dynacv7r1_w.zip)  
 DYNAC source, data, plot and help files (for LINUX/MAC, tar/gz format) [dynacv7r1.tar.gz](https://github.com/dynac-source/DYNAC-download/files/7769411/dynacv7r1.tar.gz)  
 
-*Note: To unzip the linux/mac version, type: tar xvfz dynacv7r1.tar.g*z  
+*Note: To unzip the linux/mac version, type: tar xvfz dynacv7r2.tar.gz*   
 
 **DYNAC V7R2 (INDIVIDUAL FILES)**  
 DYNAC User Guide (PDF format) [dynac_UG.pdf](https://github.com/dynac-source/DYNAC-download/blob/main/dynac_UG.pdf)  
@@ -38,7 +38,7 @@ Script to compile the DYNAC source (for LINUX and MAC, text format) [comv7](http
 Script to compile the dyndat source (for WINDOWS, .bat file) [complt.bat](https://github.com/dynac-source/DYNAC-download/blob/main/complt.bat)  
 Script to compile the dyndat source (for LINUX and MAC, text format) [complt](https://github.com/dynac-source/DYNAC-download/blob/main/complt)  
 
-*Note: To unzip the linux/mac version of the source, type: tar xvfz dynacv7r1_source.tar.gz*
+*Note: To unzip the linux/mac version of the source, type: tar xvfz dynacv7r2_source.tar.gz*
 
 **OTHER DYNAC UTILITIES**  
 [DGUI](https://github.com/dynac-source/DYNAC-download/blob/main/README.md#dgui-v2r2-download), a DYNAC Graphical User Interface.  
