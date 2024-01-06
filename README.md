@@ -3,7 +3,7 @@
 LINUX, MAC and WINDOWS downloads for the simulation code DYNAC V7R2 can be found on this page. Instructions for installation after downloading are in the file: [readme.txt](https://github.com/dynac-source/DYNAC-download/files/6633754/readme.txt). This file is also contained in the full package below.
 
 **MODIFICATIONS PERTAINING TO DYNAC V7R2 (6-Jan-2024)**  
-Please see the [change log](https://github.com/dynac-source/DYNAC-download/files/6633795/modV7R1.txt) for a full list of changes with respect to V7R1.  
+Please see the [change log](https://github.com/dynac-source/DYNAC-download/blob/main/modV7R2.txt) for a full list of changes with respect to V7R1.  
 DYNAC V7R2 has some minor additions, modifications and corrections compared to the previous revision.
 
 
