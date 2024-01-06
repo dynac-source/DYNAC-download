@@ -9,7 +9,7 @@
         character(len=40) :: vtext
         character(len=23) :: filenm
         character(len=16) :: termtype
-        character(len=5), dimension(20) :: cccst
+        character(len=7), dimension(20) :: cccst
         character(len=2) :: backslash
         character(len=1) :: sepa
         common/prtcnt/imax
@@ -17,7 +17,7 @@
         common/wfil2l/uxmin,uxmax,uymin,uymax
         common/fichier/filenm,pfnm
         common/fpath/ppath
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/pscl/yminsk,iskale
@@ -35,7 +35,7 @@
         common/wfil20/xmin(10),xmax(10),ymin(10),ymax(10)
         common/wfil120/xxpmax,yypmax,xymax,zzpmax,zxmax,zymax,ndx,ndy,bex
         common/mingw/mg
-        logical mg,dgui
+        logical mg,dgui,s2gr
         dimension larg(4),bex(30)
 ! V1.2  Original released version, compatible with g77
 ! V2.0  Formatting changed to be compatible with gfortran and with WGNUPLOT gp440win32
@@ -67,6 +67,11 @@
 !       local directory usage) for all 3 operating systems. As a consequence, when this
 !       version is started by dgui, it will write the gnuplot files to the directory that
 !       was selected in dgui. One can now save density plots.
+! V3.2  Added the possibility of saving to png, jpeg or gif files. This is achieved by setting
+!       the -tt option with any of these 3 gnuplot terminal types.
+! V3R3  Align version/revision numbering scheme to the one of DYNAC.Charge states are now 
+!       printed with more significant digits.
+!       
 !
 ! if mg=.true., use MINGW on windows, which has a different result for ctime function than
 ! standard gfortran
@@ -74,14 +79,17 @@
         mg=.false.
 ! if plotit is called by dgui, then create all plots in separate windows
         dgui=.false.
+! s2gr will be set to .true. if the terminal type is png, jpeg or gif
+        s2gr=.false.        
         ppath=''
         lpath=0
+        llpath=0
         command=''
         fname=''
         termtype=''
         sepa=''
         narg=0
-        vtext='PLOTIT V3.1 1-May-2020'
+        vtext='PLOTIT V3R3 16-Jan-2022'
         DO
           call get_command_argument(narg, inarg, length, istat)
           larg(narg+1)=LEN_TRIM(inarg)
@@ -155,6 +163,11 @@
               write(6,*)'   wxt for WINDOWS'
               stop
             endif
+            if(txt(1:2).eq.'-v') then
+!     print out of PLOTIT version
+              write(6,'(A)') vtext
+              stop
+            endif            
           endif
         enddo
 ! iopsy=1 --> LINUX   GNUPLOT version
@@ -201,6 +214,10 @@
           stop
         endif
         ltt=LEN_TRIM(termtype)
+        s2gr=.false.
+        if(termtype(1:ltt).eq.'gif' .or. termtype(1:ltt).eq.'GIF' &
+          .or. termtype(1:ltt).eq.'png' .or. termtype(1:ltt).eq.'PNG' &
+          .or. termtype(1:ltt).eq.'jpeg' .or. termtype(1:ltt).eq.'JPEG')  s2gr=.true.
         if(lpath.ne.0) then
 !          write(6,*) 'PlotpathL=',llpath,ppath(1:llpath)
           if(iopsy.ne.2) then
@@ -353,10 +370,11 @@
             read(66,*) ncstat
             read(66,*) (cstat(j),j=1,ncstat)
             do j=1,ncstat
-              icstat(j)=int(cstat(j))
-              write(command(2:5),'(I2)') icstat(j)
+!              icstat(j)=int(cstat(j))
+!              write(command(2:5),'(I2)') icstat(j)
+              write(command(2:8),'(f7.3)') cstat(j)
               command(1:1)=' '
-              cccst(j)=command(1:5)
+              cccst(j)=command(1:8)
             enddo
           endif
           if (igrtyp.eq.11) then
@@ -472,7 +490,11 @@
           else
 ! WINDOWS
             command=''
-            command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            if(dgui) then
+              command='wgnuplot "'//trim(ppath)//'dynac.gnu"'
+            else  
+              command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            endif  
             CALL System(trim(command))
           endif
         ENDIF
@@ -485,10 +507,11 @@
             read(66,*) ncstat
             read(66,*) (cstat(j),j=1,ncstat)
             do j=1,ncstat
-              icstat(j)=int(cstat(j))
-              write(command(2:5),'(I2)') icstat(j)
+!              icstat(j)=int(cstat(j))
+!              write(command(2:5),'(I2)') icstat(j)
+              write(command(2:8),'(F7.3)') cstat(j)
               command(1:1)=' '
-              cccst(j)=command(1:5)
+              cccst(j)=command(1:8)
             enddo
           endif
           if (igrtyp.eq.12) then
@@ -621,7 +644,11 @@
           else
 ! WINDOWS
             command=''
-            command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            if(dgui) then
+              command='wgnuplot "'//trim(ppath)//'dynac.gnu"'
+            else  
+              command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            endif  
             CALL System(trim(command))
           endif
         ENDIF
@@ -738,7 +765,11 @@
           else
 ! WINDOWS
             command=''
-            command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            if(dgui) then
+              command='wgnuplot "'//trim(ppath)//'dynac.gnu"'
+            else  
+              command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            endif  
             CALL System(trim(command))
           endif
         ENDIF
@@ -826,7 +857,11 @@
           else
 ! WINDOWS
             command=''
-            command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            if(dgui) then
+              command='wgnuplot "'//trim(ppath)//'dynac.gnu"'
+            else  
+              command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            endif  
             CALL System(trim(command))
           endif
         ENDIF
@@ -871,7 +906,11 @@
           else
 ! WINDOWS
             command=''
-            command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            if(dgui) then
+              command='wgnuplot "'//trim(ppath)//'dynac.gnu"'
+            else  
+              command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            endif  
             CALL System(trim(command))
           endif
         ENDIF
@@ -910,7 +949,11 @@
           else
 ! WINDOWS
             command=''
-            command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            if(dgui) then
+              command='wgnuplot "'//trim(ppath)//'dynac.gnu"'
+            else  
+              command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            endif  
             CALL System(trim(command))
           endif
         ENDIF
@@ -949,14 +992,20 @@
           else
 ! WINDOWS
             command=''
-            command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            if(dgui) then
+              command='wgnuplot "'//trim(ppath)//'dynac.gnu"'
+            else  
+              command="wgnuplot "//trim(ppath)//"dynac.gnu"
+            endif  
             CALL System(trim(command))
           endif
         ENDIF
-! ask if the file should be saved (only when plotit is called from the terminal)
-        if (.not. dgui) call savefile
-        write(6,7733) int(data(2))
-7733    format('Plot ',i3,' has been plotted')
+! ask if the file should be saved when plotit is called from the terminal,
+! but not if the terminal type is gif, jpeg or png
+        if(.not. s2gr) then
+          if(.not. dgui) call savefile
+        endif  
+        write(6,'(A,i3,A)') 'Plot ',int(data(2)),' has been plotted'
         write(6,*)
         GOTO 10
 20      write(6,'(A,I3)')'Total number of plots: ',int(data(2))
@@ -971,12 +1020,13 @@
 !< *******************************************************************
         SUBROUTINE wfile1(imax,x,xp,cx,cy)
         implicit real(8) (a-h,o-z)
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/fpath/ppath
         dimension x(1000002),xp(1000002),cx(300),cy(300)
         character(len=280) :: command
         character(len=256) :: ppath,fwpath
         character(len=16) :: termtype
+        logical s2gr
         command=""
         if(iopsy.eq.1 .or. iopsy.eq.3) then
 ! LINUX or MAC
@@ -1022,11 +1072,11 @@
         common/wfil2l/uxmin,uxmax,uymin,uymax
         common/fichier/filenm,pfnm
         common/fpath/ppath
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/gui/dgui
-        logical dgui
+        logical dgui,s2gr
         character(len=255), dimension(20) :: pfnm
-        character(len=255) :: txt
+        character(len=255) :: txt,outtxt
         character(len=280) :: command
         character(len=80) :: title
         character(len=256) :: ppath,fwpath,myfrmt
@@ -1034,7 +1084,7 @@
         character(len=33) :: paf
         character(len=23) :: filenm
         character(len=16) :: termtype
-        character(len=3) :: cpn
+        character(len=3) :: cpn,cfn
         character(len=2) :: backslash
         parameter (backslash="\\")
         command=""
@@ -1074,48 +1124,74 @@
         txt=''
         ipn=ipn-1
         cpn='   '
+        txt=''
+        txt='set terminal '//termtype(1:ltt)
+! number the plot window and number the file
+!2020debug
+        cfn='000'
+        cpn=''
+        if(ipn+1.lt.10) then
+          write(cpn(1:1),'(I1)') ipn+1
+          write(cfn(3:3),'(I1)') ipn+1
+        elseif(ipn.lt.100) then
+          write(cpn(1:2),'(I2)') ipn+1
+          write(cfn(2:3),'(I2)') ipn+1
+        else
+          write(cpn(1:3),'(I3)') ipn+1
+          write(cfn(1:3),'(I3)') ipn+1
+        endif   
+!        write(cpn,'(I3.3)') ipn+1
+        outtxt=''
+        outtxt="set output '"//trim(ppath)//"dynplot"//cfn//"."//termtype(1:ltt)//"'"
         if(iopsy.eq.1) then
 ! LINUX
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
           if(dgui) then
 ! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 900,500'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 900,500'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 900,500'
-            write(50,'(A)') txt(1:53+ltt)
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 900,500'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 900,500'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 900,500'
+              write(50,'(A)') trim(txt)
+            endif
           endif
           ytitle=0.985
         elseif(iopsy.eq.3) then
 ! MAC
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 900,500'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 900,500'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 900,500'
-            write(50,'(A)') txt(1:53+ltt)
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 900,500'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 900,500'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 900,500'
+              write(50,'(A)') trim(txt)
+            endif
           endif
           if(dgui) then
             ytitle=0.985
@@ -1124,36 +1200,45 @@
           endif
         else
 ! WINDOWS
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 900,500'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 900,500'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 900,500'
-            write(50,'(A)') txt(1:53+ltt)
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 900,500'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 900,500'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 900,500'
+              write(50,'(A)') trim(txt)
+            endif
           endif
         endif
         write(50,"('unset key')")
-        if(iopsy.eq.1 .and. dgui) then
+        if(iopsy.eq.1) then
 ! LINUX
-          ytitle=0.985
+          if(s2gr) then
+            ytitle=0.980
+          elseif(dgui) then
+            ytitle=0.985
+          else
+            ytitle=0.980
+          endif
         else
           ytitle=0.97
         endif
-        write(50,1001) title,ytitle
-        write(50,1002) labels(1)
-        write(50,1003) labels(2)
+        write(50,'(A,A,A,F5.3)') 'set label "',trim(title),'" at screen 0.1 ,',ytitle
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(1)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(2)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") uxmin,uxmax
         write(50,"('set yrange [',f12.5,':',f12.5,']')") uymin,uymax
         if(iopsy.eq.1) then
@@ -1216,14 +1301,12 @@
             write(50,4014) filenm
           endif
         endif
-        if(.not. dgui) write(50,1010)
-1001    format('set label "',A80,'" at screen 0.1 ,',f5.3)
-1002    format('set xlabel "',A40,'"')
-1003    format('set ylabel "',A40,'"')
+        if(.not. s2gr) then
+          if(.not. dgui) write(50,'(A)')'pause -1 "hit return to continue"'
+        endif  
 1012    format('plot "dynac.plt" using 1:2 with lines, ',A1)
 1013    format('"dynac.plt" using 3:4 with lines')
 1014    format('plot "dynac.plt" using 1:2 with lines')
-1010    format('pause -1 "hit return to continue"')
 2012    format('plot "',a21,'" using 1:2 with lines, ',A1)
 2013    format('"',a21,'" using 3:4 with lines')
 3014    format('plot "',a21,'" using 1:2 with lines')
@@ -1237,12 +1320,13 @@
 !< *******************************************************************
         SUBROUTINE wfile3(imax,x,xp,y,yp)
         implicit real(8) (a-h,o-z)
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/fpath/ppath
         dimension x(1000002),xp(1000002),y(1000002),yp(1000002)
         character(len=256) :: ppath,fwpath
         character(len=280) :: command
         character(len=16) :: termtype
+        logical s2gr
         command=""
         if(iopsy.eq.1 .or. iopsy.eq.3) then
 ! LINUX or MAC
@@ -1270,7 +1354,7 @@
         implicit real(8) (a-h,o-z)
         common/fichier/filenm,pfnm
         common/fpath/ppath
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/grtyp/igrtyp
@@ -1281,7 +1365,8 @@
         character(len=280) :: command
         character(len=23) :: filenm
         character(len=16) :: termtype
-        character(len=5), dimension(20) :: cccst
+        character(len=7), dimension(20) :: cccst
+        logical s2gr
         if (icont.eq.1) then
           command=""
           if(iopsy.eq.1 .or. iopsy.eq.3) then
@@ -1331,7 +1416,7 @@
                 endif
               ENDDO
               if(igrtyp.eq.6) write(6,111) klm,cstat(j)
-111           format(i7,' particles with charge state ',f4.1)
+111           format(i7,' particles with charge state ',f9.5)
               if(igrtyp.eq.11) then
                 if(j.eq.1) write(6,222) klm,cstat(j)
 222           format(i7,' particles originally within zone ', &
@@ -1385,7 +1470,7 @@
         implicit real(8) (a-h,o-z)
         common/fichier/filenm,pfnm
         common/fpath/ppath
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/grtyp/igrtyp
@@ -1395,7 +1480,8 @@
         character(len=280) :: command
         character(len=23) :: filenm
         character(len=16) :: termtype
-        character(len=5), dimension(20) :: cccst
+        character(len=7), dimension(20) :: cccst
+        logical s2gr
 ! store particle coordinates
         IF(igrtyp.eq.2) then
           command=""
@@ -1429,7 +1515,7 @@
               endif
             ENDDO
             if(igrtyp.eq.7) write(6,111) klm,cstat(j)
-111         format(i7,' particles with charge state ',f3.0)
+111         format(i7,' particles with charge state ',f9.5)
             if(igrtyp.eq.12) then
               if(j.eq.1) write(6,222) klm,cstat(j)
 222           format(i7,' particles originally within zone ', &
@@ -1483,16 +1569,16 @@
         common/wfil2/title,labels
         common/fichier/filenm,pfnm
         common/fpath/ppath
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/pscl/yminsk,iskale
         common/gui/dgui
         common/grtyp/igrtyp
-        logical dgui
+        logical dgui,s2gr
         character(len=256) :: ppath,fwpath,myfrmt
         character(len=255), dimension(20) :: pfnm
-        character(len=255) :: strng,fnm,txt
+        character(len=255) :: strng,fnm,txt,outtxt
         character(len=280) :: command
         character(len=80) :: title
         character(len=40), dimension(20) :: labels
@@ -1501,10 +1587,10 @@
         character(len=23) :: filenm
         character(len=16) :: termtype
         character(len=7) :: parcnt
-        character(len=5), dimension(20) :: cccst
-        character(len=5) :: toc
-        character(len=4) :: indxx
-        character(len=3) :: cpn
+        character(len=7), dimension(20) :: cccst
+        character(len=7) :: toc
+        character(len=7) :: indxx
+        character(len=3) :: cpn,cfn
         character(len=2) :: backslash,indx
         common/wfil20/xmin(10),xmax(10),ymin(10),ymax(10)
         parameter (backslash="\\")
@@ -1548,113 +1634,180 @@
         write(50,"('set style data dots',/,'set pointsize 0.01')")
         ipn=ipn-1
         cpn='   '
+        txt=''
+        txt='set terminal '//termtype(1:ltt)
+! number the plot window 
+        cfn='000'
+        cpn=''
+        if(ipn+1.lt.10) then
+          write(cpn(1:1),'(I1)') ipn+1
+          write(cfn(3:3),'(I1)') ipn+1
+        elseif(ipn.lt.100) then
+          write(cpn(1:2),'(I2)') ipn+1
+          write(cfn(2:3),'(I2)') ipn+1
+        else
+          write(cpn(1:3),'(I3)') ipn+1
+          write(cfn(1:3),'(I3)') ipn+1
+        endif   
+!        write(cpn,'(I3.3)') ipn+1
+        outtxt=''
+        outtxt="set output '"//trim(ppath)//"dynplot"//cfn//"."//termtype(1:ltt)//"'"
         ytitle=0.99
         if(iopsy.eq.1) then
 ! LINUX
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.51'
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:53+ltt)
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+            endif
           endif
           ytitle=0.985
         elseif(iopsy.eq.3) then
 ! MAC
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.51'
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+              ytitle=0.985
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+              ytitle=0.990
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:53+ltt)
-            ytitle=0.990
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:41+ltt)
-            ytitle=0.990
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+              ytitle=0.985
+            else  
+              txt=trim(txt)//' title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+              ytitle=0.990
+            endif
           endif
         else
 ! WINDOWS
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.52'
           if(dgui) then
             ytitle=0.99
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 817,768'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 817,768'
+              write(50,'(A)') trim(txt)
+            endif
           else
             ytitle=0.985
-          endif
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
-          if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
-            else
-              write(cpn(3:3),'(I3)') ipn
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 817,768'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+              ytitle=0.990
+            else  
+              txt=trim(txt)//' title "DYNAC" size 817,768'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-!            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 681,640'
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 817,768'
-            write(50,'(A)') txt(1:53+ltt)
-          else
-!            txt(14+ltt:41+ltt)=' title "DYNAC" size 681,640'
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 817,768'
-            write(50,'(A)') txt(1:41+ltt)
           endif
         endif
         if(ncstat.eq.1) then
           write(50,"('unset key')")
         else
-          if(iopsy.eq.1 .or. iopsy.eq.3) then
+          if(iopsy.eq.1) then
+! LINUX
             if(igrtyp.eq.12) then
-              write(50,"('set key at screen 0.56, 0.95 spacing 0.8', &
-              &  ' samplen 1 textcolor rgb variable ')")
+              if(s2gr) then
+                write(50,"('set key at screen 0.6, 0.96 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              elseif(dgui) then
+                write(50,"('set key at screen 0.58, 0.95 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              else
+                write(50,"('set key at screen 0.59, 0.95 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              endif              
             else
-              write(50,"('set key at screen 0.54, 0.90 spacing 0.8', &
-              & ' samplen 1 textcolor rgb variable ')")
+              if(s2gr) then
+                write(50,"('set key at screen 0.57, 0.96 spacing 0.8', &
+                & ' samplen 1 textcolor rgb variable ')")
+              elseif(dgui)then
+                write(50,"('set key at screen 0.555, 0.97 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              else
+                write(50,"('set key at screen 0.565, 0.97 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              endif              
+            endif
+          elseif(iopsy.eq.3) then
+! MAC
+            if(igrtyp.eq.12) then
+              if(s2gr) then
+                write(50,"('set key at screen 0.6, 0.96 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              else
+!                write(50,"('set key at screen 0.59, 0.95 spacing 0.8', &
+                write(50,"('set key at screen 0.58, 0.95 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              endif              
+            else
+              if(s2gr) then
+                write(50,"('set key at screen 0.57, 0.97 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              else
+!                write(50,"('set key at screen 0.57, 0.95 spacing 0.8', &
+                write(50,"('set key at screen 0.555, 0.97 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")
+              endif              
             endif
           else
+! WINDOWS
             if(igrtyp.eq.12) then
-              write(50,"('set key at screen 0.56, 0.95 spacing 0.8', &
-              & ' samplen 1 textcolor rgb variable ')")
+              if(s2gr) then
+                write(50,"('set key at screen 0.585, 0.95 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")   
+              else
+                write(50,"('set key at screen 0.585, 0.95 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")            
+              endif                        
             else
-              write(50,"('set key at screen 0.56, 0.95 spacing 0.8', &
-              & ' samplen 1 textcolor rgb variable ')")
+              if(s2gr) then
+                write(50,"('set key at screen 0.565, 0.97 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")   
+              else
+                write(50,"('set key at screen 0.565, 0.97 spacing 0.8', &
+                & ' samplen 1 textcolor rgb variable ')")             
+              endif                       
             endif
           endif
         endif
-        write(50,1001) title,ytitle
-        if(iopsy.eq.1) then
-! LINUX
-          write(50,1500) parcnt
-        elseif(iopsy.eq.3) then
-! MAC
-          write(50,1510) parcnt
-        else
-! WINDOWS
-          write(50,1505) parcnt
-        endif
+        write(50,'(A,A,A,F5.3)') 'set label "',trim(title),'" at screen 0.13 ,',ytitle
         write(50,"('set multiplot')")
 ! x-z
         write(50,"('set size 0.5,0.5')")
@@ -1664,8 +1817,8 @@
         else
           write(50,"('set origin 0.,0.5')")
         endif
-        write(50,1002) labels(1)
-        write(50,1003) labels(2)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(1)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(2)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(1),xmax(1)
         write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin(1),ymax(1)
         if(igrtyp.eq.2) then
@@ -1674,7 +1827,7 @@
               fwpath=''
               fwpath=trim(ppath)//"dynac.plt"
               myfrmt=''
-              if(termtype.eq.'qt') then
+              if(termtype.eq.'qt' .or. s2gr) then
                 myfrmt="plot '"//trim(fwpath)//"' using 1:2 with dots lc 8"
                 write(50,'(A)') trim(myfrmt)
               else
@@ -1702,11 +1855,11 @@
         else
           strng=pfnm(1)
           toc=cccst(1)
-          indxx=toc(1:4)
+          indxx=toc(1:7)
           if(isave.eq.0) then
             strng=pfnm(1)
             toc=cccst(1)
-            indxx=toc(1:4)
+            indxx=toc(1:7)
             if(iopsy.le.3) then
               fwpath=''
               fwpath=trim(ppath)//trim(pfnm(1))
@@ -1720,7 +1873,7 @@
               strng=''
               write(strng,'(I2)') j
               toc=cccst(j)
-              indxx=toc(1:4)
+              indxx=toc(1:7)
               if(iopsy.le.3) then
                 fwpath=''
                 fwpath=trim(ppath)//trim(pfnm(j))
@@ -1747,7 +1900,7 @@
               endif
             else
               toc=cccst(mcstat)
-              indxx=toc(1:4)
+              indxx=toc(1:7)
               if(iopsy.le.3) then
                 fwpath=''
                 fwpath=trim(ppath)//trim(pfnm(mcstat))
@@ -1791,8 +1944,8 @@
         else
           write(50,"('set origin 0.5,0.5')")
         endif
-        write(50,1002) labels(3)
-        write(50,1003) labels(4)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(3)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(4)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(2),xmax(2)
         write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin(2),ymax(2)
         if(igrtyp.eq.2) then
@@ -1801,7 +1954,7 @@
               fwpath=''
               fwpath=trim(ppath)//"dynac.plt"
               myfrmt=''
-              if(termtype.eq.'qt') then
+              if(termtype.eq.'qt' .or. s2gr) then
                 myfrmt="plot '"//trim(fwpath)//"' using 3:4 with dots lc 8"
                 write(50,'(A)') trim(myfrmt)
               else
@@ -1894,8 +2047,8 @@
 ! new end
         write(50,"('set size 0.5,0.5')")
         write(50,"('set origin 0.,0.')")
-        write(50,1002) labels3
-        write(50,1003) labels4
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels3),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels4),'"'
         if(iskale.eq.1) then
           write(50,"('set logscale y')")
           write(50,9012)
@@ -1903,18 +2056,35 @@
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin2,xmax2
         write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin2,ymax2
         if(iopsy.eq.1) then
-          write(50,"('set key at screen 0.535, 0.45 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+! LINUX        
+          if(s2gr) then
+            write(50,"('set key at screen 0.55, 0.47 spacing 0.9', &
+            & ' samplen 1 textcolor rgb variable ')")
+          else
+            write(50,"('set key at screen 0.545, 0.46 spacing 0.9', &
+            & ' samplen 1 textcolor rgb variable ')")
+          endif              
         elseif(iopsy.eq.3) then
-          write(50,"('set key at screen 0.535, 0.475 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+! MAC
+          if(s2gr) then
+            write(50,"('set key at screen 0.535, 0.475 spacing 0.9', &
+            &     ' samplen 1 textcolor rgb variable ')")
+          else
+            write(50,"('set key at screen 0.535, 0.46 spacing 0.9', &
+            &     ' samplen 1 textcolor rgb variable ')")
+          endif              
         else
-          write(50,"('set key at screen 0.535, 0.45 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+! WINDOWS
+          if(s2gr) then
+            write(50,"('set key at screen 0.545, 0.47 spacing 1.0', &
+            &     ' samplen 1 textcolor rgb variable ')")    
+          else
+            write(50,"('set key at screen 0.545, 0.47 spacing 1.0', &
+            &     ' samplen 1 textcolor rgb variable ')")             
+          endif         
         endif
         if(isave.eq.0) then
           if(iopsy.le.3) then
-! WINDOWS
             fnm=pfnm(1)
             nn=len_trim(fnm)
             fnm(nn-2:nn)='pro'
@@ -2000,8 +2170,8 @@
 ! new end
         write(50,"('set size 0.5,0.5')")
         write(50,"('set origin 0.5,0.')")
-        write(50,1002) labels3
-        write(50,1003) labels4
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels3),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels4),'"'
         if(iskale.eq.1) then
           write(50,"('set logscale y')")
           write(50,9012)
@@ -2009,18 +2179,33 @@
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin2,xmax2
         write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin2,ymax2
         if(iopsy.eq.1) then
-          write(50,"('set key at screen 0.535, 0.35 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+          if(s2gr) then
+            write(50,"('set key at screen 0.55, 0.17 spacing 0.9', &
+            & ' samplen 1 textcolor rgb variable ')")
+          else
+            write(50,"('set key at screen 0.545, 0.18 spacing 0.9', &
+            & ' samplen 1 textcolor rgb variable ')")
+          endif
         elseif(iopsy.eq.3) then
-          write(50,"('set key at screen 0.535, 0.375 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+          if(s2gr) then
+            write(50,"('set key at screen 0.545, 0.18 spacing 0.9', &
+            &     ' samplen 1 textcolor rgb variable ')")
+          else
+            write(50,"('set key at screen 0.535, 0.18 spacing 0.9', &
+            &     ' samplen 1 textcolor rgb variable ')")
+          endif          
         else
-          write(50,"('set key at screen 0.535, 0.35 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+! Windows
+          if(s2gr) then
+            write(50,"('set key at screen 0.545, 0.18 spacing 1.0', &
+            &     ' samplen 1 textcolor rgb variable ')")    
+          else
+            write(50,"('set key at screen 0.545, 0.18 spacing 1.0', &
+            &     ' samplen 1 textcolor rgb variable ')")            
+          endif        
         endif
         if(isave.eq.0) then
           if(iopsy.le.3) then
-! WINDOWS
             fnm=pfnm(4)
             nn=len_trim(fnm)
             fnm(nn-2:nn)='pro'
@@ -2089,19 +2274,13 @@
         endif
 !
         write(50,"('unset multiplot')")
-        if(.not. dgui) write(50,9020)
-1001    format('set label "',A80,'" at screen 0.13 ,',f5.3)
-1500    format('set label "',A7,' particles" at screen 0.45,0.51')
-1505    format('set label "',A7,' particles" at screen 0.45,0.52')
-1510    format('set label "',A7,' particles" at screen 0.45,0.51')
-1002    format('set xlabel "',A40,'"')
-1003    format('set ylabel "',A40,'"')
+        if(.not. s2gr) then
+          if(.not. dgui) write(50,'(A)')'pause -1 "hit return to continue"'
+        endif  
 1008    format('plot "dynac.plt" using 1:2 with dots lc 0')
 7008    format('plot "dynac.plt" using 1:2 with dots lc 7')
-!8008    format('plot "dynac.plt" using 1:2 with dots lc 8')
 1010    format('plot "dynac.plt" using 3:4 with dots lc 0')
 7010    format('plot "dynac.plt" using 3:4 with dots lc 7')
-!8010    format('plot "dynac.plt" using 3:4 with dots lc 8')
 2008    format('plot "',a21,'" using 1:2 with dots lc 0')
 2010    format('plot "',a21,'" using 3:4 with dots lc 0')
 7808    format('plot "',a21,'" using 1:2 with dots lc 7')
@@ -2150,7 +2329,6 @@
                '" with lines ls 3')
 9012    format('set format y "%.0t.E%+02T"')
 9014    format('set format y "%g"')
-9020    format('pause -1 "hit return to continue"')
         close (50)
         RETURN
         END SUBROUTINE wfile21
@@ -2165,10 +2343,10 @@
         common/wfil120/xxpmax,yypmax,xymax,zzpmax,zxmax,zymax,ndx,ndy,bex
         common/fichier/filenm,pfnm
         common/fpath/ppath
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         character(len=256) :: ppath,fwpath,myfrmt
         character(len=255), dimension(20) :: pfnm
-        character(len=255) :: strng,fnm,txt
+        character(len=255) :: strng,fnm,txt,outtxt
         character(len=80) :: command,title
         character(len=50), dimension(3) :: cols
         character(len=40), dimension(20) :: labels
@@ -2178,11 +2356,11 @@
         character(len=16) :: termtype
         character(len=8) :: hm,vm,ho,vo,hr,vr,sc
         character(len=7) :: parcnt
-        character(len=3) :: cpn
+        character(len=3) :: cpn,cfn
         character(len=2) :: backslash,indx
         common/pscl/yminsk,iskale
         common/gui/dgui
-        logical dgui
+        logical dgui,s2gr
         common/wfil20/xmin(10),xmax(10),ymin(10),ymax(10)
         dimension bex(30)
         parameter (backslash="\\")
@@ -2223,88 +2401,111 @@
         write(50,"('set style data dots',/,'set pointsize 0.01')")
         ipn=ipn-1
         cpn='   '
+        txt=''
+        txt='set terminal '//termtype(1:ltt)
+! number the plot window 
+!2020debug
+        cfn='000'
+        cpn=''
+        if(ipn+1.lt.10) then
+          write(cpn(1:1),'(I1)') ipn+1
+          write(cfn(3:3),'(I1)') ipn+1
+        elseif(ipn.lt.100) then
+          write(cpn(1:2),'(I2)') ipn+1
+          write(cfn(2:3),'(I2)') ipn+1
+        else
+          write(cpn(1:3),'(I3)') ipn+1
+          write(cfn(1:3),'(I3)') ipn+1
+        endif   
+!        write(cpn,'(I3.3)') ipn+1
+        outtxt=''
+        outtxt="set output '"//trim(ppath)//"dynplot"//cfn//"."//termtype(1:ltt)//"'"
         ytitle=0.99
         if(iopsy.eq.1) then
 ! LINUX
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.51'
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:53+ltt)
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+            endif
           endif
           ytitle=0.985
         elseif(iopsy.eq.3) then
 ! MAC
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.51'
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+              ytitle=0.980
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+              ytitle=0.985
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:53+ltt)
-            ytitle=0.990
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:41+ltt)
-            ytitle=0.990
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+              ytitle=0.980              
+            else  
+              txt=trim(txt)//' title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+              ytitle=0.990              
+            endif
           endif
         else
 ! WINDOWS
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.52'
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 817,768'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+              ytitle=0.985 
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 817,768'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-!            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 681,640'
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 817,768'
-            write(50,'(A)') txt(1:53+ltt)
           else
-!            txt(14+ltt:41+ltt)=' title "DYNAC" size 681,640'
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 817,768'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 817,768'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+              ytitle=0.985              
+            else  
+              txt=trim(txt)//' title "DYNAC" size 817,768'
+              write(50,'(A)') trim(txt)
+            endif
           endif
         endif
         write(50,"('unset key')")
-        write(50,1001) title,ytitle
-        if(iopsy.eq.1) then
-! LINUX
-          write(50,1500) parcnt
-        elseif(iopsy.eq.3) then
-! MAC
-          write(50,1510) parcnt
-        else
-! WINDOWS
-          write(50,1505) parcnt
-        endif
+        write(50,'(A,A,A,F5.3)') 'set label "',trim(title),'" at screen 0.13 ,',ytitle
         write(50,"('set multiplot')")
 ! x-z
         write(50,"('set size 0.495,0.55')")
@@ -2314,8 +2515,8 @@
         else
           write(50,"('set origin 0.,0.5')")
         endif
-        write(50,1002) labels(1)
-        write(50,1003) labels(2)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(1)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(2)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(1),xmax(1)
         write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin(1),ymax(1)
         write(50,"('set dgrid3d 20,20')")
@@ -2359,8 +2560,8 @@
         else
           write(50,"('set origin 0.5,0.5')")
         endif
-        write(50,1002) labels(3)
-        write(50,1003) labels(4)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(3)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(4)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(2),xmax(2)
         write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin(2),ymax(2)
         hm=''
@@ -2402,8 +2603,8 @@
 ! new end
         write(50,"('set size 0.5,0.5')")
         write(50,"('set origin 0.,0.')")
-        write(50,1002) labels3
-        write(50,1003) labels4
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels3),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels4),'"'
         if(iskale.eq.1) then
           write(50,"('set logscale y')")
           write(50,9012)
@@ -2411,13 +2612,23 @@
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin2,xmax2
         write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin2,ymax2
         if(iopsy.eq.1) then
-          write(50,"('set key at screen 0.535, 0.45 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+          if(s2gr) then
+            write(50,"('set key at screen 0.545, 0.45 spacing 0.9', &
+            & ' samplen 1 textcolor rgb variable ')")
+          else
+            write(50,"('set key at screen 0.545, 0.45 spacing 0.9', &
+            & ' samplen 1 textcolor rgb variable ')")
+          endif
         elseif(iopsy.eq.3) then
-          write(50,"('set key at screen 0.535, 0.475 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+          if(s2gr) then
+            write(50,"('set key at screen 0.545, 0.46 spacing 0.9', &
+            &     ' samplen 1 textcolor rgb variable ')")
+          else
+            write(50,"('set key at screen 0.535, 0.475 spacing 0.9', &
+            &     ' samplen 1 textcolor rgb variable ')")
+          endif         
         else
-          write(50,"('set key at screen 0.535, 0.45 spacing 0.8', &
+          write(50,"('set key at screen 0.545, 0.47 spacing 1.0', &
           &     ' samplen 1 textcolor rgb variable ')")
         endif
         if(isave.eq.0) then
@@ -2487,8 +2698,8 @@
 ! new end
         write(50,"('set size 0.5,0.5')")
         write(50,"('set origin 0.5,0.')")
-        write(50,1002) labels3
-        write(50,1003) labels4
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels3),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels4),'"'
         if(iskale.eq.1) then
           write(50,"('set logscale y')")
           write(50,9012)
@@ -2496,13 +2707,23 @@
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin2,xmax2
         write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin2,ymax2
         if(iopsy.eq.1) then
-          write(50,"('set key at screen 0.535, 0.35 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+          if(s2gr) then
+            write(50,"('set key at screen 0.545, 0.19 spacing 0.9', &
+            & ' samplen 1 textcolor rgb variable ')")
+          else
+            write(50,"('set key at screen 0.545, 0.19 spacing 0.9', &
+            & ' samplen 1 textcolor rgb variable ')")
+          endif
         elseif(iopsy.eq.3) then
-          write(50,"('set key at screen 0.535, 0.375 spacing 0.8', &
-          &     ' samplen 1 textcolor rgb variable ')")
+          if(s2gr) then
+            write(50,"('set key at screen 0.545, 0.18 spacing 0.9', &
+            &     ' samplen 1 textcolor rgb variable ')")
+          else
+            write(50,"('set key at screen 0.535, 0.17 spacing 0.9', &
+            &     ' samplen 1 textcolor rgb variable ')")
+          endif                   
         else
-          write(50,"('set key at screen 0.535, 0.35 spacing 0.8', &
+          write(50,"('set key at screen 0.545, 0.17 spacing 1.0', &
           &     ' samplen 1 textcolor rgb variable ')")
         endif
         if(isave.eq.0) then
@@ -2557,13 +2778,9 @@
         endif
 !
         write(50,"('unset multiplot')")
-        if(.not. dgui) write(50,9020)
-1001    format('set label "',A80,'" at screen 0.13 ,',f5.3)
-1500    format('set label "',A7,' particles" at screen 0.45,0.51')
-1505    format('set label "',A7,' particles" at screen 0.45,0.52')
-1510    format('set label "',A7,' particles" at screen 0.45,0.51')
-1002    format('set xlabel "',A40,'"')
-1003    format('set ylabel "',A40,'"')
+        if(.not. s2gr) then
+          if(.not. dgui) write(50,'(A)')'pause -1 "hit return to continue"'
+        endif  
 !1008    format('splot "dynac.plt" u ',a,':',a,':',a)
 2008    format('splot "',a21,'" u ',a,':',a,':',a)
 5002    format('set palette defined ( 0 "white", 1 "pink", ', &
@@ -2583,7 +2800,6 @@
                '" with lines ls 3')
 9012    format('set format y "%.0t.E%+02T"')
 9014    format('set format y "%g"')
-9020    format('pause -1 "hit return to continue"')
         close (50)
         RETURN
         END SUBROUTINE wfile121
@@ -2596,7 +2812,7 @@
         character(len=256) :: fname,command,lfname
         character(len=256) :: ppath,fwpath,myfrmt
         character(len=255), dimension(20) :: pfnm
-        character(len=255) :: txt
+        character(len=255) :: txt,outtxt
         character(len=80) :: title
         character(len=40), dimension(20) :: labels
         character(len=33) :: paf
@@ -2604,10 +2820,10 @@
         character(len=16) :: termtype
         character(len=255) :: strng
         character(len=7) :: parcnt
-        character(len=5), dimension(20) :: cccst
-        character(len=5) :: toc
-        character(len=4) :: indxx
-        character(len=3) :: cpn
+        character(len=7), dimension(20) :: cccst
+        character(len=7) :: toc
+        character(len=7) :: indxx
+        character(len=3) :: cpn,cfn
         character(len=2) :: backslash
         common/prtcnt/imax
         common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
@@ -2615,11 +2831,11 @@
         common/wfil2/title,labels
         common/fichier/filenm,pfnm
         common/fpath/ppath
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/files/fname,lpath
         common/gui/dgui
         common/grtyp/igrtyp
-        logical dgui
+        logical dgui,s2gr
         common/wfil20/xmin(10),xmax(10),ymin(10),ymax(10)
         parameter (backslash="\\")
         command=''
@@ -2639,17 +2855,29 @@
           command(8:lpath+7)=fname(1:lpath)
           command(lpath+8:lpath+17)='dynac.gnu"'
           if(dgui) then
-            ytitle=0.99
+            if(s2gr) then
+              ytitle=0.985
+            else
+              ytitle=0.99
+            endif
           else
-            ytitle=0.992
+            if(s2gr) then
+              ytitle=0.985
+            else
+              ytitle=0.992
+            endif
           endif
         else
 ! WINDOWS
           if(dgui) then
             ytitle=0.99
           else
-            ytitle=0.985
-          endif
+            if(s2gr) then
+              ytitle=0.988
+            else
+              ytitle=0.985
+            endif
+          endif          
           command="if exist "//trim(ppath)//"dynac.gnu del "//trim(ppath)//"dynac.gnu"
         endif
         CALL System(trim(COMMAND))
@@ -2681,104 +2909,161 @@
         else
           if(iopsy.eq.1) then
             if(igrtyp.eq.11) then
-              write(50,"('set key at screen 0.56, 0.95 spacing 0.8', &
-              & ' samplen 1 textcolor rgb variable ')")
-            else
-              write(50,"('set key at screen 0.54, 0.96 spacing 0.8 maxcols 1', &
+              if(s2gr) then
+                write(50,"('set key at screen 0.59, 0.96 spacing 0.9 maxcols 1', &
               & ' samplen 1 horizontal textcolor rgb variable ')")
+              elseif(dgui) then
+                write(50,"('set key at screen 0.58, 0.95 spacing 0.8', &
+              & ' samplen 1 textcolor rgb variable ')")
+              else
+                write(50,"('set key at screen 0.59, 0.95 spacing 0.8', &
+              & ' samplen 1 textcolor rgb variable ')")
+              endif
+            else
+              if(s2gr) then
+                write(50,"('set key at screen 0.57, 0.96 spacing 0.8 maxcols 1', &
+              & ' samplen 1 horizontal textcolor rgb variable ')")
+              elseif(dgui)then
+                write(50,"('set key at screen 0.555, 0.97 spacing 0.8', &
+              & ' samplen 1 textcolor rgb variable ')")
+              else
+                write(50,"('set key at screen 0.565, 0.97 spacing 0.8', &
+              & ' samplen 1 textcolor rgb variable ')")
+              endif
             endif
           elseif(iopsy.eq.3) then
             if(igrtyp.eq.11) then
-              write(50,"('set key at screen 0.56, 0.95 spacing 0.8', &
-              & ' samplen 1 textcolor rgb variable ')")
-            else
-              write(50,"('set key at screen 0.54, 0.96 spacing 0.8 maxcols 1', &
+              if(s2gr) then
+                write(50,"('set key at screen 0.59, 0.95 spacing 0.9 maxcols 1', &
               & ' samplen 1 horizontal textcolor rgb variable ')")
+              else
+                write(50,"('set key at screen 0.58, 0.95 spacing 0.9', &
+              & ' samplen 1 textcolor rgb variable ')")
+              endif
+            else
+              if(s2gr) then
+                write(50,"('set key at screen 0.575, 0.97 spacing 0.9 maxcols 1', &
+              & ' samplen 1 horizontal textcolor rgb variable ')")
+              else
+                write(50,"('set key at screen 0.555, 0.97 spacing 0.9 maxcols 1', &
+              & ' samplen 1 horizontal textcolor rgb variable ')")
+              endif             
             endif
           else
             if(igrtyp.eq.11) then
-              write(50,"('set key at screen 0.56, 0.95 spacing 0.8', &
+              write(50,"('set key at screen 0.585, 0.95 spacing 0.9', &
               & ' samplen 1 textcolor rgb variable ')")
             else
-              write(50,"('set key at screen 0.56, 0.95 spacing 0.8', &
-              & ' samplen 1 textcolor rgb variable ')")
+              if(s2gr) then
+                write(50,"('set key at screen 0.565, 0.97 spacing 0.9', &
+                & ' samplen 1 textcolor rgb variable ')")   
+              else
+                write(50,"('set key at screen 0.565, 0.97 spacing 0.8', &
+                & ' samplen 1 textcolor rgb variable ')")            
+              endif            
             endif
           endif
         endif
         write(50,"('set size 1.0, 1.0')")
-        write(50,1001) title,ytitle
+        write(50,'(A,A,A,F5.3)') 'set label "',trim(title),'" at screen 0.13 ,',ytitle
         ipn=ipn-1
-        cpn='   '
+        cpn=''
+        txt=''
+        txt='set terminal '//termtype(1:ltt)
+! number the plot window 
+!2020debug
+        cfn='000'
+        cpn=''
+        if(ipn+1.lt.10) then
+          write(cpn(1:1),'(I1)') ipn+1
+          write(cfn(3:3),'(I1)') ipn+1
+        elseif(ipn.lt.100) then
+          write(cpn(1:2),'(I2)') ipn+1
+          write(cfn(2:3),'(I2)') ipn+1
+        else
+          write(cpn(1:3),'(I3)') ipn+1
+          write(cfn(1:3),'(I3)') ipn+1
+        endif   
+!        write(cpn,'(I3.3)') ipn+1
+        outtxt=''
+        outtxt="set output '"//trim(ppath)//"dynplot"//cfn//"."//termtype(1:ltt)//"'"
         if(iopsy.eq.1) then
 ! LINUX
-          write(50,1500) parcnt
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.51'
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:53+ltt)
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+            endif
           endif
           ytitle=0.985
         elseif(iopsy.eq.3) then
 ! MAC
-          write(50,1510) parcnt
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.51'
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:53+ltt)
             ytitle=0.995
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+            endif
             ytitle=0.985
           endif
         else
 ! WINDOWS
-          write(50,1505) parcnt
-          txt(1:13)='set terminal '
-          txt(14:13+ltt)=termtype(1:ltt)
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.52'
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 817,768'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 817,768'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-!            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 681,640'
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 817,768'
-            write(50,'(A)') txt(1:53+ltt)
           else
-!            txt(14+ltt:41+ltt)=' title "DYNAC" size 681,640'
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 817,768'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 817,768'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 817,768'
+              write(50,'(A)') trim(txt)
+            endif
           endif
         endif
         write(50,"('set multiplot')")
@@ -2791,8 +3076,8 @@
         else
           write(50,"('set origin 0.,0.5')")
         endif
-        write(50,1002) labels(1)
-        write(50,1003) labels(2)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(1)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(2)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(1),xmax(1)
         write(50,"('set yrange [',f12.5,':',f12.5,']')") ymin(1),ymax(1)
         IF(igrtyp.eq.1) then
@@ -2801,7 +3086,7 @@
               fwpath=''
               fwpath=trim(ppath)//"dynac.plt"
               myfrmt=''
-              if(termtype.eq.'qt') then
+              if(termtype.eq.'qt' .or. s2gr) then
                 myfrmt="plot '"//trim(fwpath)//"' using 1:2 title '' with dots lc 8, "
                 write(50,'(A,A1)') trim(myfrmt),backslash
               else
@@ -2810,6 +3095,8 @@
               endif
             elseif(iopsy.eq.1 .and. termtype.eq.'qt') then
               write(50,7008) backslash
+!            elseif(iopsy.eq.1 .and. s2gr) then
+!              write(50,7008) backslash
             else
               write(50,1008) backslash
             endif
@@ -2827,7 +3114,7 @@
         ELSE
           IF (isave.eq.0) then
             toc=cccst(1)
-            indxx=toc(1:4)
+            indxx=toc(1:7)
             if(iopsy.le.3) then
               fwpath=''
               fwpath=trim(ppath)//trim(pfnm(1))
@@ -2854,7 +3141,7 @@
                 endif
               else           
                 toc=cccst(j)
-                indxx=toc(1:4)
+                indxx=toc(1:7)
                 if(iopsy.le.3) then
                   fwpath=''
                   fwpath=trim(ppath)//trim(pfnm(j))
@@ -2908,8 +3195,8 @@
         else
           write(50,"('set origin 0.5,0.5')")
         endif
-        write(50,1002) labels(3)
-        write(50,1003) labels(4)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(3)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(4)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(2),xmax(2)
         write(50,"('set yrange [',f12.5,':',f12.5,']')") ymin(2),ymax(2)
         IF(igrtyp.eq.1) then
@@ -2918,7 +3205,7 @@
               fwpath=''
               fwpath=trim(ppath)//"dynac.plt"
               myfrmt=''
-              if(termtype.eq.'qt') then
+              if(termtype.eq.'qt' .or. s2gr) then
                 myfrmt="plot '"//trim(fwpath)//"' using 3:4 title '' with dots lc 8, "
                 write(50,'(A,A1)') trim(myfrmt),backslash
               else
@@ -2990,8 +3277,8 @@
 ! x-y
         write(50,"('set size 0.5,0.5')")
         write(50,"('set origin 0.,0.')")
-        write(50,1002) labels(5)
-        write(50,1003) labels(6)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(5)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(6)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(3),xmax(3)
         write(50,"('set yrange [',f12.5,':',f12.5,']')") ymin(3),ymax(3)
         IF(igrtyp.eq.1) then
@@ -3000,7 +3287,7 @@
               fwpath=''
               fwpath=trim(ppath)//"dynac.plt"
               myfrmt=''
-              if(termtype.eq.'qt') then
+              if(termtype.eq.'qt' .or. s2gr) then
                 myfrmt="plot '"//trim(fwpath)//"' using 1:3 title '' with dots lc 8"
                 write(50,'(A)') trim(myfrmt)
               else
@@ -3068,8 +3355,8 @@
 ! dW-dPHI
         write(50,"('set size 0.5,0.5')")
         write(50,"('set origin 0.5,0.')")
-        write(50,1002) labels(7)
-        write(50,1003) labels(8)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(7)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(8)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(4),xmax(4)
         write(50,"('set yrange [',f12.5,':',f12.5,']')") ymin(4),ymax(4)
         IF(igrtyp.eq.1) then
@@ -3078,7 +3365,7 @@
               fwpath=''
               fwpath=trim(ppath)//"dynac.plt"
               myfrmt=''
-              if(termtype.eq.'qt') then
+              if(termtype.eq.'qt' .or. s2gr) then
                 myfrmt="plot '"//trim(fwpath)//"' using 5:6 with dots lc 8, "
                 write(50,'(A,A1)') trim(myfrmt),backslash
               else
@@ -3148,13 +3435,9 @@
           ENDIF
         ENDIF
         write(50,"('unset multiplot')")
-        if(.not. dgui) write(50,1020)
-1001    format('set label "',A80,'" at screen 0.13 ,',F5.3)
-1500    format('set label "',A7,' particles" at screen 0.44,0.51')
-1505    format('set label "',A7,' particles" at screen 0.45,0.52')
-1510    format('set label "',A7,' particles" at screen 0.45,0.51')
-1002    format('set xlabel "',A40,'"')
-1003    format('set ylabel "',A40,'"')
+        if(.not. s2gr) then
+          if(.not. dgui) write(50,'(A)')'pause -1 "hit return to continue"'
+        endif  
 1008    format('plot "dynac.plt" using 1:2 title "" with ', &
                'dots lc 0, ',A1)
 7008    format('plot "dynac.plt" using 1:2 title "" with ', &
@@ -3174,7 +3457,6 @@
 7014    format('plot "dynac.plt" using 5:6 with', &
                ' dots lc 7, ',A1)
 1015    format('     "dynac.cnt" using 5:6 with lines')
-1020    format('pause -1 "hit return to continue"')
 2022    format('plot "',a21,'" using 1:2 title "" with ', &
                'dots lc 0, ',A1)
 2019    format('     "',a21,'" using 1:2 title "" with lines')
@@ -3241,14 +3523,14 @@
         common/wfil120/xxpmax,yypmax,xymax,zzpmax,zxmax,zymax,ndx,ndy,bex
         common/fichier/filenm,pfnm
         common/fpath/ppath
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/files/fname,lpath
         common/gui/dgui
-        logical dgui
+        logical dgui,s2gr
         character(len=256) :: fname,command,lfname
         character(len=256) :: ppath,fwpath,myfrmt
         character(len=255), dimension(20) :: pfnm
-        character(len=255) :: txt
+        character(len=255) :: txt,outtxt
         character(len=80) :: title
         character(len=50), dimension(3) :: cols
         character(len=40), dimension(20) :: labels
@@ -3257,7 +3539,7 @@
         character(len=16) :: termtype
         character(len=8) :: hm,vm,ho,vo,hr,vr,sc
         character(len=7) :: parcnt
-        character(len=3) :: cpn
+        character(len=3) :: cpn,cfn
         character(len=2) :: backslash
         dimension bex(30)
         parameter (backslash="\\")
@@ -3266,7 +3548,6 @@
         write(parcnt,'(I7)') imax
         write(6,"(i7,' particles total')") imax
         ytitle=0.985
-
         if(iopsy.eq.1) then
 ! LINUX
           command(1:7)='rm -f "'
@@ -3279,7 +3560,9 @@
           command(8:lpath+7)=fname(1:lpath)
           command(lpath+8:lpath+17)='dynac.gnu"'
           if(dgui) then
-            ytitle=0.99
+            ytitle=0.985
+          elseif(s2gr) then
+            ytitle=0.98
           else
             ytitle=0.992
           endif
@@ -3312,79 +3595,111 @@
         ENDIF
         write(50,"('unset key')")
         write(50,"('set size 1.0, 1.0')")
-        write(50,1001) title,ytitle
+        write(50,'(A,A,A,F5.3)') 'set label "',trim(title),'" at screen 0.13 ,',ytitle
         ipn=ipn-1
         cpn='   '
+        txt=''
+        txt='set terminal '//termtype(1:ltt)
+! number the plot window 
+!2020debug
+        cfn='000'
+        cpn=''
+        if(ipn+1.lt.10) then
+          write(cpn(1:1),'(I1)') ipn+1
+          write(cfn(3:3),'(I1)') ipn+1
+        elseif(ipn.lt.100) then
+          write(cpn(1:2),'(I2)') ipn+1
+          write(cfn(2:3),'(I2)') ipn+1
+        else
+          write(cpn(1:3),'(I3)') ipn+1
+          write(cfn(1:3),'(I3)') ipn+1
+        endif   
+!        write(cpn,'(I3.3)') ipn+1
+        outtxt=''
+        outtxt="set output '"//trim(ppath)//"dynplot"//cfn//"."//termtype(1:ltt)//"'"
         if(iopsy.eq.1) then
 ! LINUX
-          write(50,1500) parcnt
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.44,0.51'
           txt(1:13)='set terminal '
           txt(14:13+ltt)=termtype(1:ltt)
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:53+ltt)
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+            endif
           endif
           ytitle=0.985
         elseif(iopsy.eq.3) then
 ! MAC
-          write(50,1510) parcnt
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.51'
           txt(1:13)='set terminal '
           txt(14:13+ltt)=termtype(1:ltt)
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:53+ltt)
             ytitle=0.995
           else
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 750,625'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 750,625'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 750,625'
+              write(50,'(A)') trim(txt)
+            endif
             ytitle=0.985
           endif
         else
 ! WINDOWS
-          write(50,1505) parcnt
+          write(50,'(A,A7,A)') 'set label "',parcnt,' particles" at screen 0.45,0.52'
           txt(1:13)='set terminal '
           txt(14:13+ltt)=termtype(1:ltt)
           if(dgui) then
-! then number the plot window and let it persist
-            txt(14+ltt:14+ltt)=' '
-            if(ipn.lt.10) then
-              write(cpn(3:3),'(I1)') ipn
-            elseif(ipn.lt.100) then
-              write(cpn(2:3),'(I2)') ipn
+            if(s2gr) then
+! then number the plot window 
+              txt=trim(txt)//' '//cpn//' size 817,768'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
             else
-              write(cpn(3:3),'(I3)') ipn
+! then number the plot window and let it persist
+              txt=trim(txt)//' '//cpn//' persist title "DYNAC" size 817,768'
+              write(50,'(A)') trim(txt)
             endif
-            txt(15+ltt:17+ltt)=cpn
-!            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 681,640'
-            txt(18+ltt:53+ltt)=' persist title "DYNAC" size 817,768'
-            write(50,'(A)') txt(1:53+ltt)
           else
-!            txt(14+ltt:41+ltt)=' title "DYNAC" size 681,640'
-            txt(14+ltt:41+ltt)=' title "DYNAC" size 817,768'
-            write(50,'(A)') txt(1:41+ltt)
+            if(s2gr) then
+! then number the plot window
+              txt=trim(txt)//' size 817,768'
+              write(50,'(A)') trim(txt)
+              write(50,'(A)') trim(outtxt)
+            else  
+              txt=trim(txt)//' title "DYNAC" size 817,768'
+              write(50,'(A)') trim(txt)
+            endif
           endif
         endif
         write(50,"('set multiplot')")
@@ -3397,8 +3712,8 @@
         else
           write(50,"('set origin 0.,0.5')")
         endif
-        write(50,1002) labels(1)
-        write(50,1003) labels(2)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(1)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(2)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(1),xmax(1)
         write(50,"('set yrange [',f12.5,':',f12.5,']')") ymin(1),ymax(1)
         write(50,"('set dgrid3d 20,20')")
@@ -3442,8 +3757,8 @@
         else
           write(50,"('set origin 0.5,0.5')")
         endif
-        write(50,1002) labels(3)
-        write(50,1003) labels(4)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(3)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(4)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(2),xmax(2)
         write(50,"('set yrange [',f12.5,':',f12.5,']')") ymin(2),ymax(2)
         hm=''
@@ -3468,8 +3783,8 @@
 ! x-y
         write(50,"('set size 0.495,0.55')")
         write(50,"('set origin 0.,0.')")
-        write(50,1002) labels(5)
-        write(50,1003) labels(6)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(5)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(6)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(3),xmax(3)
         write(50,"('set yrange [',f12.5,':',f12.5,']')") ymin(3),ymax(3)
         hm=''
@@ -3499,8 +3814,8 @@
         else
           write(50,"('set origin 0.5,0.')")
         endif
-        write(50,1002) labels(7)
-        write(50,1003) labels(8)
+        write(50,'(A,A,A)') 'set xlabel "',trim(labels(7)),'"'
+        write(50,'(A,A,A)') 'set ylabel "',trim(labels(8)),'"'
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin(4),xmax(4)
         write(50,"('set yrange [',f12.5,':',f12.5,']')") ymin(4),ymax(4)
         hm=''
@@ -3523,14 +3838,9 @@
           write(50,2022)filenm(1:21),trim(cols(1)),trim(cols(2)),trim(cols(3))
         ENDIF
         write(50,"('unset multiplot')")
-        if(.not. dgui) write(50,1020)
-1001    format('set label "',A80,'" at screen 0.13 ,',F5.3)
-1500    format('set label "',A7,' particles" at screen 0.44,0.51')
-1505    format('set label "',A7,' particles" at screen 0.45,0.52')
-1510    format('set label "',A7,' particles" at screen 0.45,0.51')
-1002    format('set xlabel "',A40,'"')
-1003    format('set ylabel "',A40,'"')
-1020    format('pause -1 "hit return to continue"')
+        if(.not. s2gr) then
+          if(.not. dgui) write(50,'(A)') 'pause -1 "hit return to continue"'
+        endif  
 2022    format('splot "',a21,'" u ',a,':',a,':',a)
 5002    format('set palette defined ( 0 "white", 1 "pink", ', &
                '2 "purple", 3  "blue", 4 "green", 5 "yellow",', &
@@ -3636,7 +3946,7 @@
         character(len=16) :: termtype
         character(len=255) :: strng
         character(len=6) :: fmt
-        character(len=5), dimension(20) :: cccst
+        character(len=7), dimension(20) :: cccst
         character(len=2) :: backslash
         character(len=1) :: fsave
         common/prtcnt/imax
@@ -3644,7 +3954,7 @@
         common/wfil2l/uxmin,uxmax,uymin,uymax
         common/wfil120/xxpmax,yypmax,xymax,zzpmax,zxmax,zymax,ndx,ndy,bex
         common/fichier/filenm,pfnm
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/pscl/yminsk,iskale
@@ -3653,15 +3963,14 @@
         common/grtyp/igrtyp
         parameter (backslash="\\")
         common/mingw/mg
-        logical mg,dgui
+        logical mg,dgui,s2gr
         dimension bex(30)
 ! plot number only used in conjunction with dgui, not with plotit call from terminal
 ! dummy value here
         nplot=0
         if(iopsy.eq.1 .or. iopsy.eq.3) then
 ! LINUX or MAC
-         write(6,'(a)',ADVANCE='NO') &
-         'Save plot file (y/n/p(rint)/e(xit)/q(uit)/<cr>=n)? '
+         write(6,'(a)',ADVANCE='NO')'Save plot file (y/n/p(rint)/e(xit)/q(uit)/<cr>=n)? '
         else
 ! WINDOWS
          write(6,'(a)',ADVANCE='NO')'Save plot file (y/n/e(xit)/q(uit)/<cr>=n)? '
@@ -4070,13 +4379,14 @@
 !< *******************************************************************
         SUBROUTINE wfile110(ndx,ndy)
         implicit real(8) (a-h,o-z)
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/p2d/xxpar(100,100), yypar(100,100), xyar(100,100), &
                    zzpar(100,100), zxar(100,100), zyar(100,100)
         common/fpath/ppath
         character(len=256) :: ppath,fwpath
         character(len=280) :: command
         character(len=16) :: termtype
+        logical s2gr
 ! store histogrammed data
         command=""
         if(iopsy.eq.1 .or. iopsy.eq.3) then
@@ -4105,13 +4415,14 @@
 !< *******************************************************************
         SUBROUTINE wfile111(ndx,ndy)
         implicit real(8) (a-h,o-z)
-        common/iopsys/iopsy,termtype,ltt
+        common/iopsys/iopsy,termtype,ltt,s2gr
         common/p2d/xxpar(100,100), yypar(100,100), xyar(100,100), &
                    zzpar(100,100), zxar(100,100), zyar(100,100)
         common/fpath/ppath
         character(len=256) :: ppath,fwpath
         character(len=280) :: command
         character(len=16) :: termtype
+        logical s2gr
 ! store histogrammed data
         command=""
         if(iopsy.eq.1 .or. iopsy.eq.3) then
