@@ -33,7 +33,8 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QGroupBox,
         QMenu, QPushButton, QRadioButton, QHBoxLayout, QWidget,
         QLabel, QSlider, QGraphicsView, QFileDialog, QMessageBox,
         QAction, qApp, QShortcut, QToolBar, QMainWindow, QDialog,
-        QVBoxLayout, QGridLayout, QInputDialog, QSpinBox, QGraphicsScene)
+        QVBoxLayout, QGridLayout, QInputDialog, QSpinBox, 
+        QComboBox, QGraphicsScene)
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import colorcet as cc
@@ -643,7 +644,7 @@ class OptionsLayout(QWidget):
         self.label_cmn = QtWidgets.QLabel(self)
         self.label_cmn.setText("Color map:")
         self.label_cmn.resize(275,25)
-        self.comboBox = QtGui.QComboBox(self)
+        self.comboBox = QtWidgets.QComboBox(self)
         self.comboItems = {1: "default", 2: "gnuplot2_r", 3: "gist_earth_r", 4: "gist_stern",
             5: "viridis", 6: "nipy_spectral", 7: "jet", 8: "jet_white", 9: "diverging_rainbow_bgymr_45_85_c67",
             10: "rainbow_bgyr_35_85_c72", 11: "linear_tritanopic_krjcw_5_98_c46",
