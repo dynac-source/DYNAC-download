@@ -46,12 +46,12 @@ Script to compile the dyndat source (for LINUX and MAC, text format) [complt](ht
 *gfortran ptq2dyn.f -o ptq2dyn*  
 An alternative to the above mentioned DYNAC GUI has been developed at [MSU](https://github.com/NSCLAlt/DynacGUI).
 
-# DGUI V2R3-download
+# DGUI V2R4-download
 **DGUI, a DYNAC Graphical User Interface**  
-DGUI V2R3 is a Python3 based GUI to DYNAC. Alternatively, the DYNAC code can be exectued from the terminal.  
-DGUI V2R3 has been tested on LINUX (Mint 20 and older), MAC (Catalina and Mojave) and WINDOWS (11, 10 and 7) and requires DYNAC V6R19 or newer and python3.8 or newer.
+DGUI V2R4 is a Python3 based GUI to DYNAC. Alternatively, the DYNAC code can be exectued from the terminal.  
+DGUI V2R4 has been tested on LINUX (Mint 20 and older), MAC (Catalina and Mojave) and WINDOWS (11, 10 and 7) and requires DYNAC V6R19 or newer and python3.8 or newer.
 Instructions for installation after downloading are in the [DGUI User Guide](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_UG.pdf).  
-Modifications pertaining to DGUI V2R3 (6-Jan-2024): [dgui_modV2R2.txt](https://github.com/dynac-source/DYNAC-download/files/7769687/dgui_modV2R2.txt)  
+Modifications pertaining to DGUI V2R4 (6-Jan-2024): [dgui_modV2R4.txt](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_modV2R4.txt)  
 
 Please refer to the DGUI User Guide for download and installation instructions.  
 DGUI source (.py) [dgui.py](https://github.com/dynac-source/DYNAC-download/blob/main/dgui.py)  
