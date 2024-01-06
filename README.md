@@ -1,4 +1,4 @@
-# DYNAC V7R2-download (3-Jan-2024 page under construction, links will not necessairly point to V7R2 yet. Will happen within the next few weeks)
+# DYNAC V7R2-download  
 **DYNAC DOWNLOAD PAGE for DYNAC V7R2, a Multiparticle Beam Simulation Code for linacs and beam transport lines.**  
 LINUX, MAC and WINDOWS downloads for the simulation code DYNAC V7R2 can be found on this page. Instructions for installation after downloading are in the file: [readme.txt](https://github.com/dynac-source/DYNAC-download/blob/main/readme.txt). This file is also contained in the full package below.
 
@@ -18,8 +18,8 @@ DYNAC has been succesfully tested on LINUX (Mint 20.2 and older, Red Hat 4.4.7-1
 The charge stripper model requires further development (e.g. energy loss model).
 
 **DYNAC V7R2 (FULL PACKAGE)**  
-DYNAC source, data, plot and help files (for WINDOWS, ZIP format) [dynacv7r1_w.zip](https://github.com/dynac-source/DYNAC-download/files/7769406/dynacv7r1_w.zip)  
-DYNAC source, data, plot and help files (for LINUX/MAC, tar/gz format) [dynacv7r1.tar.gz](https://github.com/dynac-source/DYNAC-download/files/7769411/dynacv7r1.tar.gz)  
+DYNAC source, data, plot and help files (for WINDOWS, ZIP format) [dynacv7r2_w.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r2_w.zip)  
+DYNAC source, data, plot and help files (for LINUX/MAC, tar/gz format) [dynacv7r2.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r2.tar.gz)  
 
 *Note: To unzip the linux/mac version, type: tar xvfz dynacv7r2.tar.gz*   
 
