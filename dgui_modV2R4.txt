@@ -2,7 +2,9 @@
 Additions, modifications and corrections for DGUI V2R4 (06-Jan-2024)
 ==================================================================================
 ## ADDITIONS ##
- 1.   One can interrupt DYNAC execution by clicking "Run DYNAC" a second time. 
+ 1.   One can interrupt DYNAC execution by clicking "Run DYNAC" a second time.
+ 2.   Option for plotting beam losses was added.
+ 3.   Versions of software associated with DGUI can by listed from options menu.
 
 ==================================================================================
 Additions, modifications and corrections for DGUI V2R3 (30-Oct-2021)
