@@ -23,7 +23,7 @@ from pyqtgraph.graphicsItems.LegendItem import ItemSample
 from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
 
 from PyQt5 import QtWidgets, QtCore, QtGui, QtPrintSupport
-from PyQt5.QtCore    import QSize, Qt, QRect, QPoint
+from PyQt5.QtCore    import QSize, Qt, QRect, QPoint, QLocale
 from PyQt5.QtGui     import (QColor, QTextCursor, QTextBlock, QRegion,
         QIcon, QKeySequence, QPen, QImage, QScreen, 
         QImageWriter, QPalette, QFont)
@@ -36,6 +36,11 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QGroupBox,
         QVBoxLayout, QGridLayout, QInputDialog, QSpinBox, 
         QComboBox, QGraphicsScene)
 from matplotlib import cm
+# next lines in view of backward compatibility with older matplotlib versions
+try: #2024-01-18 this to allow new colormaps call; if except, older cm.get_colormap will be used instead
+    from matplotlib import colormaps 
+except Exception: 
+    pass
 import matplotlib.pyplot as plt
 import colorcet as cc
 
@@ -47,14 +52,14 @@ from scipy.stats import moment
 import argparse
 import math
 
-import tkinter as tk
-from tkinter import ttk
+#import tkinter as tk
+#from tkinter import ttk
 
 ######################################################
 # set the DGUI version and its date                  #
 ######################################################
-dguiv = "DGUI V2R4"
-dguid = "06-Jan-2024"
+dguiv = "DGUI V2R5"
+dguid = "20-Jan-2024"
 dgui_v = dguiv + " " + dguid
 
 ######################################################
@@ -299,6 +304,22 @@ myplatform=platform.system()
 systembin="DYNAC GUI running on " + platform.system() + " with DYNAC binary in " + dynpath
 
 ######################################################
+# Function for isometric plots (replacement for      #
+# interp2d)                                          #
+######################################################
+#def createInterpolation(x,y,param,param_err):
+def createInterpolation(x,y,param):
+    x = x
+    y = y
+    param = param
+#    param_weights=1/param_err
+#    spl = interpolate.SmoothBivariateSpline(x,y,param,w=param_weights)
+    spl = interpolate.RectBivariateSpline(x, y, param, kx=1, ky=1)
+    #spl = NearestNDInterpolator(list(zip(x, y)),param)
+    return spl
+
+
+######################################################
 # Gaussian for fitting purposes                      #
 ######################################################
 def gaussian(x, amp, cen, wid, lof):
@@ -355,15 +376,25 @@ def cm_lut(cmn,show_thr):
     # Get the colormap
     if(cmn == "default"): 
     # Get bottom part of colormap
-        cmapbot = cm.get_cmap("RdPu")  
+# 2024-01-17 get_cmap will be deprecated; replace with new call
+        try:
+            cmapbot = colormaps["RdPu"]  
+        except:
+            cmapbot = cm.get_cmap("RdPu")
         cmapbot._init()
         lutbot = (cmapbot._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0 -255 for Qt
         # Get central part of colormap
-        colormap = cm.get_cmap("nipy_spectral") 
+        try:
+            colormap = colormaps["nipy_spectral"]  
+        except:
+            colormap = cm.get_cmap("nipy_spectral")
         colormap._init()
         lut = (colormap._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0 -255 for Qt
         # Get top part of colormap
-        cmaptst = cm.get_cmap("Reds")  
+        try:
+            cmaptst = colormaps["Reds"]  
+        except:
+            cmaptst = cm.get_cmap("Reds")
         cmaptst._init()
         luttop = (cmaptst._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0 -255 for Qt
         #overwrite bottom part of lut
@@ -398,9 +429,15 @@ def cm_lut(cmn,show_thr):
            (cmn == "jet") or (cmn == "jet_white")):
             cmtype=1
             if(cmn=="jet_white"):
-                colormap = cm.get_cmap("jet")
+                try:
+                    colormap = colormaps["jet"]   
+                except:
+                    colormap = cm.get_cmap("jet")
             else:
-                colormap = cm.get_cmap(cmn)
+                try:
+                    colormap = colormaps[cmn]   
+                except:
+                    colormap = cm.get_cmap(cmn)
             colormap._init()
             lut =  (colormap._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0-255 for Qt
             olut = (colormap._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0-255 for Qt
@@ -414,7 +451,10 @@ def cm_lut(cmn,show_thr):
                 indx = indx + 1
         if((cmn == "gnuplot2_r") or (cmn == "gist_earth_r")): 
             cmtype=1
-            colormap = cm.get_cmap(cmn)
+            try:
+                colormap = colormaps[cmn]   
+            except:
+                colormap = cm.get_cmap(cmn)
             colormap._init()
             lut =  (colormap._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0-255 for Qt
         if (cmtype == 0): 
@@ -652,11 +692,11 @@ class OptionsLayout(QWidget):
             14: "linear_kryw_5_100_c67", 15:"linear_kryw_0_100_c71"}
 #        self.comboBox.addItems(self.comboItems)
 #       set preferred colormap as first (this way it will show at the top of the selection box)
-        self.comboBox.addItem(colormap_name)
+#        self.comboBox.addItem(colormap_name)
         indx=1
         while indx < 16:
-            if(colormap_name != self.comboItems.get(indx)):
-                self.comboBox.addItem(self.comboItems.get(indx))
+#            if(colormap_name != self.comboItems.get(indx)):
+            self.comboBox.addItem(self.comboItems.get(indx))
             indx=indx + 1
         if (platform.system() == 'Windows') :
             self.label_cmn.move(125, topvpos+4*vdel-2)        
@@ -1139,6 +1179,9 @@ class OptionsLayout(QWidget):
     def cm_choice(self,textnum):
         global colormap_name, topvpos, vdel, lut 
         self.staticPlt.close()
+        # color maps numbered from 1..15, but standard button starts from 0
+        textnum = textnum + 1
+        
         text = self.comboItems[textnum]
         if(text == "jet_white"):
             colormap_name = "jet"
@@ -1680,7 +1723,7 @@ class MainWindow(QMainWindow):
         sw_version = os.popen(cmd)
         dsw1 = sw_version.read().rstrip("\n")
         dsw1 = dsw1.strip()
-        dsw1 = dsw1[5:-4]
+        dsw1 = dsw1[7:-7]
         #print("Checked dynac    version:",dsw1)
         sw_version.close()
             
@@ -2841,12 +2884,23 @@ class MainLayout(QWidget):
 #                        print("RF Frequency ",freq," MHz")
                         mytext="RF Frequency " + str(freq) + " MHz" + "\n"
                     else:
-                        freq=tkinter.simpledialog.askfloat("Input Data Required", "Enter frequency [MHz]")
-#                        print("RF Frequency ",freq," MHz")
+#                        freq=tkinter.simpledialog.askfloat("Input Data Required", "Enter frequency [MHz]")
+                        myfdialog = QtWidgets.QInputDialog()
+                        myfdialog.setLocale(QLocale(QLocale.English,QLocale.UnitedStates))
+                        myfdialog.setInputMode(QInputDialog.DoubleInput)
+                        myfdialog.setLabelText("Enter frequency [MHz]:")
+                        myfdialog.setDoubleMaximum(10000)
+                        myfdialog.setDoubleDecimals(5)
+                        myfdialog.setWindowTitle("Input Data Required")
+                        okPressed = myfdialog.exec_()
+                        if okPressed:
+                            freq = myfdialog.doubleValue()
+                        else:
+                            return
                         mytext="RF Frequency " + str(freq) + " MHz" + "\n"
-                        self.log_it(mytext)
-                    ns2deg  = 0.36*freq 
-                    myDataFrame["z"] = ns2deg * myDataFrame["z"]  
+                        self.log_it(mytext)                 
+                    ns2deg  = 0.36 * freq                  
+                    myDataFrame["z"] = ns2deg * myDataFrame["z"] 
                 if(iflag in [2, 12, 102, 112]):
                 # file with charge states
                     grouped = myDataFrame.groupby("value")
@@ -2961,7 +3015,6 @@ class MainLayout(QWidget):
                 zmin=np.nanmin(myDataFrame["z"].values)
                 zpmax=np.nanmax(myDataFrame["zp"].values)
                 zpmin=np.nanmin(myDataFrame["zp"].values)
-
 #                xmean = np.nanmean(myDataFrame["x"].values)
                 xmean = myDataFrame["x"].mean()
                 xpmean = myDataFrame["xp"].mean()
@@ -2971,7 +3024,7 @@ class MainLayout(QWidget):
                 zpmean = myDataFrame["zp"].mean()
                 ener=zpmean
                 txtener = str(ener)
-#                print("ener=",txtener)      
+#                print(zmean,"ener=",txtener)      
 #                self.text_energy.setText(txtener)
                 if(zpmean < 0.001):
                     if(wcog < 0.001):
@@ -3000,7 +3053,6 @@ class MainLayout(QWidget):
                 emitx = x2mom * xp2mom - xxpmom * xxpmom
                 emity = y2mom * yp2mom - yypmom * yypmom
                 emitz = z2mom * zp2mom - zzpmom * zzpmom
- 
                 xext = math.sqrt(x2mom)
                 xpext= math.sqrt(xp2mom)
                 yext = math.sqrt(y2mom)
@@ -3048,8 +3100,7 @@ class MainLayout(QWidget):
                     cogy  = -ymean * 10.   
                     cogyp = -ypmean   
                     cogz  = -zmean    
-                    cogzp = -zpmean
-                   
+                    cogzp = -zpmean                
                 if(GRS=="File"):
 # check that if user defined limits are to be used, that they are reasonable
                     if(xvals[0]  > xmax+cogx):
@@ -3502,14 +3553,21 @@ class MainLayout(QWidget):
                                 exlab_hrange=xmax-xmin
                                 exlab_vmax=xpmax+cogxp
                                 exlab_vrange=xpmax-xpmin
-                        histxxp, bin_edgex, bin_edgexp = np.histogram2d(plotDataFrame["x"], plotDataFrame["xp"], nbins, normed = True)
+                        try:
+# compatible with numpy V21 and older
+                            histxxp, bin_edgex, bin_edgexp = np.histogram2d(plotDataFrame["x"], plotDataFrame["xp"], nbins, normed = True)           
+                        except:
+# compatble with numpy > v21
+                            histxxp, bin_edgex, bin_edgexp = np.histogram2d(plotDataFrame["x"], plotDataFrame["xp"], nbins)
                         xcords = [ ]
                         ycords = [ ]
                         for indx in range(1, len(bin_edgex)):
                             xcords.append(0.5*(bin_edgex[indx-1]+bin_edgex[indx]) + cogx)
                         for indx in range(1, len(bin_edgexp)):
                             ycords.append(0.5*(bin_edgexp[indx-1]+bin_edgexp[indx]) + cogxp)
-                        f = interpolate.interp2d(xcords, ycords, histxxp, kind='linear')
+# 2024-01-17 interp2d will be deprecated, replaced with new function
+#                        f = interpolate.interp2d(xcords, ycords, histxxp, kind='linear')
+                        f = createInterpolation(xcords, ycords, histxxp)
                         hticksz1 = (xpmax-xpmin)*0.01 
                         vticksz1 = (xmax-xmin)*0.01 
                         xstep=(xmax-xmin)/newbins
@@ -3547,14 +3605,21 @@ class MainLayout(QWidget):
                                 eylab_hrange=ymax-ymin
                                 eylab_vmax=ypmax+cogyp
                                 eylab_vrange=ypmax-ypmin
-                        histyyp, bin_edgey, bin_edgeyp = np.histogram2d(plotDataFrame["y"], plotDataFrame["yp"], nbins, normed = True)
+                        try:
+# compatible with numpy V21 and older
+                            histyyp, bin_edgey, bin_edgeyp = np.histogram2d(plotDataFrame["y"], plotDataFrame["yp"], nbins, normed = True)
+                        except:
+# compatble with numpy > v21
+                            histyyp, bin_edgey, bin_edgeyp = np.histogram2d(plotDataFrame["y"], plotDataFrame["yp"], nbins)
                         xcords = [ ]
                         ycords = [ ]
                         for indx in range(1, len(bin_edgey)):
                             xcords.append(0.5*(bin_edgey[indx-1]+bin_edgey[indx]) + cogy)
                         for indx in range(1, len(bin_edgeyp)):
                             ycords.append(0.5*(bin_edgeyp[indx-1]+bin_edgeyp[indx]) + cogyp)
-                        f = interpolate.interp2d(xcords, ycords, histyyp, kind='linear')
+# 2024-01-17 interp2d will be deprecated, replaced with new function
+#                        f = interpolate.interp2d(xcords, ycords, histyyp, kind='linear')
+                        f = createInterpolation(xcords, ycords, histyyp)
                         hticksz2 = (ypmax-ypmin)*0.01 
                         vticksz2 = (ymax-ymin)*0.01 
                         xstep=(ymax-ymin)/newbins
@@ -3592,14 +3657,21 @@ class MainLayout(QWidget):
                                 ezlab_hrange=zmax-zmin
                                 ezlab_vmax=zpmax+cogzp
                                 ezlab_vrange=zpmax-zpmin
-                        histzzp, bin_edgez, bin_edgezp = np.histogram2d(plotDataFrame["z"], plotDataFrame["zp"], nbins, normed = True)
+                        try:
+# compatible with numpy V21 and older
+                            histzzp, bin_edgez, bin_edgezp = np.histogram2d(plotDataFrame["z"], plotDataFrame["zp"], nbins, normed = True)
+                        except:
+# compatble with numpy > v21
+                            histzzp, bin_edgez, bin_edgezp = np.histogram2d(plotDataFrame["z"], plotDataFrame["zp"], nbins)
                         xcords = [ ]
                         ycords = [ ]
                         for indx in range(1, len(bin_edgez)):
                             xcords.append(0.5*(bin_edgez[indx-1]+bin_edgez[indx]) + cogz)
                         for indx in range(1, len(bin_edgezp)):
                             ycords.append(0.5*(bin_edgezp[indx-1]+bin_edgezp[indx]) + cogzp)
-                        f = interpolate.interp2d(xcords, ycords, histzzp, kind='linear')
+# 2024-01-17 interp2d will be deprecated, replaced with new function
+#                        f = interpolate.interp2d(xcords, ycords, histzzp, kind='linear')
+                        f = createInterpolation(xcords, ycords, histzzp)
                         hticksz3 = (zpmax-zpmin)*0.01 
                         vticksz3 = (zmax-zmin)*0.01
                         xstep = (zmax-zmin)/newbins
@@ -3654,14 +3726,21 @@ class MainLayout(QWidget):
                             if(colormap_name == "jet"): 
                                 p4.setRange(xRange=[xmin+cogx,xmax+cogx],padding=pad_size)
                                 p4.setRange(yRange=[ymin+cogy,ymax+cogy],padding=pad_size)
-                        histxy, bin_edgex, bin_edgey = np.histogram2d(plotDataFrame["x"], plotDataFrame["y"], nbins, normed = True)
+                        try:
+# compatible with numpy V21 and older
+                            histxy, bin_edgex, bin_edgey = np.histogram2d(plotDataFrame["x"], plotDataFrame["y"], nbins, normed = True)
+                        except:
+# compatble with numpy > v21
+                            histxy, bin_edgex, bin_edgey = np.histogram2d(plotDataFrame["x"], plotDataFrame["y"], nbins)
                         xcords = [ ]
                         ycords = [ ]
                         for indx in range(1, len(bin_edgex)):
                             xcords.append(0.5*(bin_edgex[indx-1]+bin_edgex[indx]) + cogx)
                         for indx in range(1, len(bin_edgey)):
                             ycords.append(0.5*(bin_edgey[indx-1]+bin_edgey[indx]) + cogy)
-                        f = interpolate.interp2d(xcords, ycords, histxy, kind='linear')
+# 2024-01-17 interp2d will be deprecated, replaced with new function
+#                        f = interpolate.interp2d(xcords, ycords, histxy, kind='linear')
+                        f = createInterpolation(xcords, ycords, histxy)
                         xstep = (xmax-xmin)/newbins
                         ystep = (ymax-ymin)/newbins
                         xnew = np.arange(xmin + cogx, xmax + cogx, xstep)
@@ -3691,14 +3770,21 @@ class MainLayout(QWidget):
                             if(colormap_name == "jet"): 
                                 p5.setRange(xRange=[zmin+cogz,zmax+cogz],padding=pad_size)
                                 p5.setRange(yRange=[xmin+cogx,xmax+cogx],padding=pad_size)
-                        histzx, bin_edgez, bin_edgex = np.histogram2d(plotDataFrame["z"], plotDataFrame["x"], nbins, normed = True)
+                        try:
+# compatible with numpy V21 and older
+                            histzx, bin_edgez, bin_edgex = np.histogram2d(plotDataFrame["z"], plotDataFrame["x"], nbins, normed = True)
+                        except:
+# compatble with numpy > v21
+                            histzx, bin_edgez, bin_edgex = np.histogram2d(plotDataFrame["z"], plotDataFrame["x"], nbins)
                         xcords = [ ]
                         ycords = [ ]
                         for indx in range(1, len(bin_edgez)):
                             xcords.append(0.5*(bin_edgez[indx-1]+bin_edgez[indx]) + cogz)
                         for indx in range(1, len(bin_edgex)):
                             ycords.append(0.5*(bin_edgex[indx-1]+bin_edgex[indx]) + cogx)
-                        f = interpolate.interp2d(xcords, ycords, histzx, kind='linear')
+# 2024-01-17 interp2d will be deprecated, replaced with new function
+#                        f = interpolate.interp2d(xcords, ycords, histzx, kind='linear')
+                        f = createInterpolation(xcords, ycords, histzx)
                         xstep = (zmax-zmin)/newbins
                         ystep = (xmax-xmin)/newbins
                         xnew = np.arange(zmin + cogz, zmax + cogz, xstep)
@@ -3728,14 +3814,21 @@ class MainLayout(QWidget):
                             if(colormap_name == "jet"): 
                                 p6.setRange(xRange=[zmin+cogz,zmax+cogz],padding=pad_size)
                                 p6.setRange(yRange=[ymin+cogy,ymax+cogy],padding=pad_size)
-                        histzy, bin_edgez, bin_edgey = np.histogram2d(plotDataFrame["z"], plotDataFrame["y"], nbins, normed = True)
+                        try:
+# compatible with numpy V21 and older
+                            histzy, bin_edgez, bin_edgey = np.histogram2d(plotDataFrame["z"], plotDataFrame["y"], nbins, normed = True)
+                        except:
+# compatble with numpy > v21
+                            histzy, bin_edgez, bin_edgey = np.histogram2d(plotDataFrame["z"], plotDataFrame["y"], nbins)
                         xcords = [ ]
                         ycords = [ ]
                         for indx in range(1, len(bin_edgez)):
                             xcords.append(0.5*(bin_edgez[indx-1]+bin_edgez[indx]) + cogz)
                         for indx in range(1, len(bin_edgey)):
                             ycords.append(0.5*(bin_edgey[indx-1]+bin_edgey[indx]) + cogy)
-                        f = interpolate.interp2d(xcords, ycords, histzy, kind='linear')
+# 2024-01-17 interp2d will be deprecated, replaced with new function
+#                        f = interpolate.interp2d(xcords, ycords, histzy, kind='linear')
+                        f = createInterpolation(xcords, ycords, histzy)
                         xstep = (zmax-zmin)/newbins
                         ystep = (ymax-ymin)/newbins
                         xnew = np.arange(zmin + cogz, zmax + cogz, xstep)
