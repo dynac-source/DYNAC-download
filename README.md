@@ -66,7 +66,7 @@ DGUI User Guide (pdf format) [DGUI User Guide](https://github.com/dynac-source/D
 Eugene Tanke 
 Email: dynacatgithub at gmail.com  
 
-Updated 6-Jan-2024
+Updated 20-Jan-2024
   
   
 
