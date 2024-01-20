@@ -5,6 +5,10 @@ Additions, modifications and corrections for DGUI V2R4 (06-Jan-2024)
  1.   One can interrupt DYNAC execution by clicking "Run DYNAC" a second time.
  2.   Versions of software associated with DGUI can by listed from options menu.
 
+## MODIFICATIONS ##
+ 1. Update to how dynac.print is read (due to added columns in this file; see
+    DYNAC UG).
+
 ==================================================================================
 Additions, modifications and corrections for DGUI V2R3 (30-Oct-2021)
 ==================================================================================
