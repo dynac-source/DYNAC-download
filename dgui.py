@@ -59,7 +59,7 @@ import math
 # set the DGUI version and its date                  #
 ######################################################
 dguiv = "DGUI V2R5"
-dguid = "20-Jan-2024"
+dguid = "21-Jan-2024"
 dgui_v = dguiv + " " + dguid
 
 ######################################################
@@ -1691,7 +1691,9 @@ class MainWindow(QMainWindow):
         if (platform.system() == 'Linux') :
             plotit_exe = dynpath[:-3] + "plot" + os.sep + "dynplt"
             dynac_exe = dynpath + os.sep + dynacv
-            sw0_prefix = distro.linux_distribution()[0] + ' ' + distro.linux_distribution()[1] + ' ' + distro.linux_distribution()[2] +  ' '
+# .linux_distribution will be deprecated, replace by new calls
+#            sw0_prefix = distro.linux_distribution()[0] + ' ' + distro.linux_distribution()[1] + ' ' + distro.linux_distribution()[2] +  ' ' 
+            sw0_prefix = distro.name() + ' ' + distro.version() + ' ' + distro.codename() +  ' ' 
         elif (platform.system() == 'Darwin') : 
             plotit_exe = dynpath[:-3] + "plot" + os.sep + "dynplt"
             dynac_exe = dynpath + os.sep + dynacv
