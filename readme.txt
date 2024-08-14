@@ -185,7 +185,7 @@ It points to the dyndat executable located in dynac/bin
 You may view the plots by typing " plotit ". There is a minor problem
 with plotit for the WINDOWS version: the first time you use it it may
 complain about not finding 3 files. Ignore this message. Details on
-"plotit" may be found in chapter 7 of the DYNAC help file.
+"plotit" may be found in chapter 7 of the DYNAC User Guide.
 
 Users can change the default gnuplot terminal by changing plotit using the 
 -tt option. For this, open the plot it script in dynamic/bin and append
@@ -202,7 +202,7 @@ be found under the "Individual files" heading. Starting from dynacv7, one also
 needs to copy cgof.cc to the source directory.
 
 Input files contain a sequence of keywords or type code entries. For user 
-instructions for these, please refer to the dynac user guide in the help 
+instructions for these, please refer to the DYNAC User Guide in the help 
 directory.
 
 Please feel free to send any suggestions, corrections, comments, modifications
