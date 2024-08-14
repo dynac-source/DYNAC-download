@@ -1,4 +1,4 @@
-# DYNAC V7R2-download  
+# DYNAC V7R3-download  (14-Aug-2024 page being updated for this new revision, not all files there yet)
 **DYNAC DOWNLOAD PAGE for DYNAC V7R3, a Multiparticle Beam Simulation Code for linacs and beam transport lines.**  
 LINUX, MAC and WINDOWS downloads for the simulation code DYNAC V7R3 can be found on this page. Instructions for installation after downloading are in the file: [readme.txt](https://github.com/dynac-source/DYNAC-download/blob/main/readme.txt). This file is also contained in the full package below.
 
@@ -14,44 +14,44 @@ Using the same link you can find a GNU Plot download for the MAC (download not a
 
 DYNAC has been succesfully tested on LINUX (Mint 21.0 and older, Red Hat 4.4.7-17), MAC (Catalina, Mojave and some older) and WINDOWS (11 and older).
 
-**OPEN ISSUES (3-Jan-2024)**  
+**OPEN ISSUES (15-Aug-2024)**  
 The charge stripper model requires further development (e.g. energy loss model).
 
-**DYNAC V7R2 (FULL PACKAGE)**  
-DYNAC source, data, plot and help files (for WINDOWS, ZIP format) [dynacv7r2_w.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r2_w.zip)  
-DYNAC source, data, plot and help files (for LINUX/MAC, tar/gz format) [dynacv7r2.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r2.tar.gz)  
+**DYNAC V7R3 (FULL PACKAGE)**  
+DYNAC source, data, plot and help files (for WINDOWS, ZIP format) [dynacv7r3_w.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r3_w.zip)  
+DYNAC source, data, plot and help files (for LINUX/MAC, tar/gz format) [dynacv7r3.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r3.tar.gz)  
 
-*Note: To unzip the linux/mac version, type: tar xvfz dynacv7r2.tar.gz*   
+*Note: To unzip the linux/mac version, type: tar xvfz dynacv7r3.tar.gz*   
 
-**DYNAC V7R2 (INDIVIDUAL FILES)**  
+**DYNAC V7R3 (INDIVIDUAL FILES)**  
 DYNAC User Guide (PDF format) [dynac_UG.pdf](https://github.com/dynac-source/DYNAC-download/blob/main/dynac_UG.pdf)  
 DYNAC input file (example) for an electron gun (text format) [egun_example2.in](https://github.com/dynac-source/DYNAC-download/blob/main/egun_example2.in)  
 DYNAC input file (example) for describing the field in an electron gun (text format; to be used with the egun example above) [egun_field.txt](https://github.com/dynac-source/DYNAC-download/files/6633699/egun_field.txt)  
 DYNAC input file for the SNS H- MEBT (Medium Energy Beam Transport) line and DTL Tank 1 (text format) [sns_mebt_dtl1.in](https://github.com/dynac-source/DYNAC-download/blob/main/sns_mebt_dtl1.in)  
-DYNAC source (for WINDOWS, ZIP format) [dynacv7r2_w_source.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r2_w_source.zip)  
+DYNAC source (for WINDOWS, ZIP format) [dynacv7r3_w_source.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r3_w_source.zip)  
 Script to compile the DYNAC source (for WINDOWS, .bat file) [comv7.bat](https://github.com/dynac-source/DYNAC-download/blob/main/comv7.bat)  
-DYNAC source file (for LINUX and MAC, tar/gz format) [dynacv7r2_source.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r2_source.tar.gz)  
+DYNAC source file (for LINUX and MAC, tar/gz format) [dynacv7r3_source.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r3_source.tar.gz)  
 Script to compile the DYNAC source (for LINUX and MAC, text format) [comv7](https://github.com/dynac-source/DYNAC-download/blob/main/comv7)  
 
 
-[dyndat.f90](https://github.com/dynac-source/DYNAC-download/blob/main/dyndat.f90) (source file (V3.3) in text format) is used for GNUPLOT based plots.  
+[dyndat.f90](https://github.com/dynac-source/DYNAC-download/blob/main/dyndat.f90) (source file (V3R4) in text format) is used for GNUPLOT based plots.  
 Script to compile the dyndat source (for WINDOWS, .bat file) [complt.bat](https://github.com/dynac-source/DYNAC-download/blob/main/complt.bat)  
 Script to compile the dyndat source (for LINUX and MAC, text format) [complt](https://github.com/dynac-source/DYNAC-download/blob/main/complt)  
 
-*Note: To unzip the linux/mac version of the source, type: tar xvfz dynacv7r2_source.tar.gz*
+*Note: To unzip the linux/mac version of the source, type: tar xvfz dynacv7r3_source.tar.gz*
 
 **OTHER DYNAC UTILITIES**  
-[DGUI](https://github.com/dynac-source/DYNAC-download/blob/main/README.md#dgui-v2r3-download), a DYNAC Graphical User Interface.  
+[DGUI](https://github.com/dynac-source/DYNAC-download/blob/main/README.md#dgui-v2r6-download), a DYNAC Graphical User Interface.  
 [ptq2dyn.f](https://github.com/dynac-source/DYNAC-download/blob/main/ptq2dyn.f) : prepares the input data file used by the RFQPTQ card. Source file in text format, compile with:  
 *gfortran ptq2dyn.f -o ptq2dyn*  
 An alternative to the above mentioned DYNAC GUI has been developed at [MSU](https://github.com/NSCLAlt/DynacGUI).
 
-# DGUI V2R5-download
+# DGUI V2R6-download
 **DGUI, a DYNAC Graphical User Interface**  
-DGUI V2R5 is a Python3 based GUI to DYNAC. Alternatively, the DYNAC code can be exectued from the terminal.  
-DGUI V2R5 has been tested on LINUX (Mint 20 and older), MAC (Catalina and Mojave) and WINDOWS (11, 10 and 7) and requires DYNAC V6R19 or newer and python3.8 or newer.
+DGUI V2R6 is a Python3 based GUI to DYNAC. Alternatively, the DYNAC code can be exectued from the terminal.  
+DGUI V2R6 has been tested on LINUX (Mint 21 and older), MAC and WINDOWS (11, 10 and 7) and requires DYNAC V6R19 or newer and python3.8 or newer. It is also exptected to function on a MAC as a previous version (V2R5) has been succesully tested on MAC Catalina and Mojave. 
 Instructions for installation after downloading are in the [DGUI User Guide](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_UG.pdf).  
-Modifications pertaining to DGUI V2R5 (20-Jan-2024) are listed in [dgui_modV2R5.txt](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_modV2R5.txt) This file also contains the changes in DGUI V2R5 as compared to previous versions.   
+Modifications pertaining to DGUI V2R6 (15-Aug-2024) are listed in [dgui_modV2R6.txt](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_modV2R6.txt) This file also contains the changes in DGUI V2R6 as compared to previous versions.   
 
 Please refer to the DGUI User Guide for download and installation instructions.  
 DGUI source (.py) [dgui.py](https://github.com/dynac-source/DYNAC-download/blob/main/dgui.py)  
@@ -66,7 +66,7 @@ DGUI User Guide (pdf format) [DGUI User Guide](https://github.com/dynac-source/D
 Eugene Tanke  
 Email: dynacatgithub at gmail.com  
 
-Updated 20-Jan-2024
+Updated 15-Aug-2024
   
   
 
