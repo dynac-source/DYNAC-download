@@ -1,4 +1,4 @@
-DYNAC V7 (WINDOWS and LINUX/MAC versions)                         6-Jan-2024
+DYNAC V7 (WINDOWS and LINUX/MAC versions)                         15-Aug-2024
 
 Software License Agreement
 
