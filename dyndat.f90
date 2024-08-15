@@ -69,8 +69,9 @@
 !       was selected in dgui. One can now save density plots.
 ! V3.2  Added the possibility of saving to png, jpeg or gif files. This is achieved by setting
 !       the -tt option with any of these 3 gnuplot terminal types.
-! V3R3  Align version/revision numbering scheme to the one of DYNAC.Charge states are now 
+! V3R3  Align version/revision numbering scheme to the one of DYNAC. Charge states are now 
 !       printed with more significant digits.
+! V3R4  Fixed issue with vertical position of titles for some X11 plots 
 !       
 !
 ! if mg=.true., use MINGW on windows, which has a different result for ctime function than
@@ -89,7 +90,7 @@
         termtype=''
         sepa=''
         narg=0
-        vtext='PLOTIT V3R3 16-Jan-2022'
+        vtext='PLOTIT V3R4 15-Aug-2024'
         DO
           call get_command_argument(narg, inarg, length, istat)
           larg(narg+1)=LEN_TRIM(inarg)
@@ -1243,7 +1244,8 @@
         write(50,"('set yrange [',f12.5,':',f12.5,']')") uymin,uymax
         if(iopsy.eq.1) then
 ! LINUX
-          write(50,"('set size 1., 1.')")
+!2024          write(50,"('set size 1., 1.')")
+          write(50,"('set size 1., 0.98')")
         else
           write(50,"('set size 1., 0.98')")
         endif
