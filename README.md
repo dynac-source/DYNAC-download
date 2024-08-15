@@ -1,4 +1,4 @@
-# DYNAC V7R3-download  (14-Aug-2024 page being updated for this new revision, not all files there yet)
+# DYNAC V7R3-download  
 **DYNAC DOWNLOAD PAGE for DYNAC V7R3, a Multiparticle Beam Simulation Code for linacs and beam transport lines.**  
 LINUX, MAC and WINDOWS downloads for the simulation code DYNAC V7R3 can be found on this page. Instructions for installation after downloading are in the file: [readme.txt](https://github.com/dynac-source/DYNAC-download/blob/main/readme.txt). This file is also contained in the full package below.
 
