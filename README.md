@@ -13,7 +13,7 @@ DYNAC V7R4 has some minor additions, modifications and corrections compared to t
 **REQUIRED SOFTWARE FOR DYNAC**  
 DYNAC needs to be compiled with gfortran, which is available from the [gfortran web site](http://gcc.gnu.org/wiki/GFortranBinaries). DYNAC has been successfully tested with gfortran/gcc 14.2.0 and older.
 GNU Plot (ZIP format) for WINDOWS can be obtained from the [gnuplot web site](http://sourceforge.net/projects/gnuplot/).
-Using the same link you can find a GNU Plot download for the MAC (download not always required for LINUX, as gnuplot is standard with some flavors of LINUX). On the MAC, it is suggested to install gnuplot with the wxt terminal (e.g. brew install gnuplot --with-wxmac --with-cairo), as it is considerably faster than the aqua terminal.
+Using the same link you can find a GNU Plot download for the MAC (download not always required for LINUX, as gnuplot is standard with some flavors of LINUX). On the MAC, it is suggested to install gnuplot with the wxt terminal (e.g. brew install gnuplot --with-wxmac --with-cairo), as it is considerably faster than the aqua terminal and the X11 terminal (as it is used by DGUI). 
 
 DYNAC has been succesfully tested on LINUX (Mint 22.0 and older, Red Hat 4.4.7-17), MAC (Sequioa, Catalina, Mojave and some older) and WINDOWS (11 and older).
 
