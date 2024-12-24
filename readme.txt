@@ -86,7 +86,7 @@ After installing gfortran, you will also need to install MAC OS Xcode developer.
 For the MAC, it is suggested to install gnuplot with the wxt, qt and x11 terminals
 (this can for instance be done with macports, but apparently no longer with home-brew), as it is 
 considerably faster than the aqua terminal.
-It is also advised to install quartz (gnu plot can interact with this for the X11 terminal). This
+It is also advised to install xquartz (gnu plot can interact with this for the X11 terminal). This
 is also needed if one uses DGUI (DYNAC gui).
 
 LINUX SPECIFIC:
@@ -144,7 +144,7 @@ On linux/MAC you may have to render comv7 executable by typing
 chmod u+x comv7
 One only needs to do this once.
 
-If you have updated your MAC to Catalina, you encounter an error message, 
+If you have recently updated your MAC, you may encounter an error message, 
 stating that -lstdc++ library cannot be found. You may need to type the 
 following command on the terminal first:
 xcode-select --install
@@ -207,4 +207,4 @@ instructions for these, please refer to the DYNAC User Guide in the help
 directory.
 
 Please feel free to send any suggestions, corrections, comments, modifications
-or new routines to Eugene Tanke (dynacatgithub@gmail.com).
+or new routines to Eugene Tanke (dynacatgithub at gmail.com).
