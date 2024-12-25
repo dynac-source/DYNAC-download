@@ -15,7 +15,7 @@ DYNAC needs to be compiled with gfortran, which is available from the [gfortran 
 GNU Plot (ZIP format) for WINDOWS can be obtained from the [gnuplot web site](http://sourceforge.net/projects/gnuplot/).
 Using the same link you can find a GNU Plot download for the MAC (download not always required for LINUX, as gnuplot is standard with some flavors of LINUX). On the MAC, it is suggested to install gnuplot with the wxt terminal (e.g. brew install gnuplot --with-wxmac --with-cairo), as it is considerably faster than the aqua terminal and the xquartz/X11 terminal (as it is used by DGUI). 
 
-DYNAC has been succesfully tested on LINUX (Mint 22.0 and older, Red Hat 4.4.7-17), MAC (Sequioa, Catalina, Mojave and some older) and WINDOWS (11 and older).
+DYNAC has been succesfully tested on LINUX (Mint 22.0 and older, Red Hat 4.4.7-17), MAC (Sequoia, Catalina, Mojave and some older) and WINDOWS (11 and older).
 
 **OPEN ISSUES (28-Dec-2024)**  
 The charge stripper model requires further development (e.g. energy loss model).
