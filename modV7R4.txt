@@ -4,6 +4,7 @@ Additions, modifications, corrections and deletions for DYNAC V7R4 (28-Dec-2024)
 ## ADDITIONS ##
  1.   For the RFQ, the electrode profile is now written to file. See the DYNAC UG
       for details.
+ 2.   Added example to the DYNAC UG of how to add a chopper using the WIENANA card.
         
 ## MODIFICATIONS ##
  1.   New revision of DYNDAT (V3R5) : In newer versions of gnuplot, the -noraise
