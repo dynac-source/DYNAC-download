@@ -2,7 +2,8 @@
 Additions, modifications and corrections for DGUI V2R7 (28-Dec-2024)
 ==================================================================================
 ## ADDITIONS ##
- 1. None
+ 1. Added the more recent MAC OS names (shown when clicking on "About" and then
+    "List software versions")
 
 ## MODIFICATIONS ##
  1. When you use DGUI to run DYNAC, you now need to include the full path to files
