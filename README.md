@@ -1,14 +1,11 @@
 # DYNAC V7R4-download 
 
-**24-Dec-2024 DYNAC DOWNLOAD PAGE for DYNAC V7R4 is being prepared; will be available soon!** 
-
 **DYNAC DOWNLOAD PAGE for DYNAC V7R4, a Multiparticle Beam Simulation Code for linacs and beam transport lines.**  
 LINUX, MAC and WINDOWS downloads for the simulation code DYNAC V7R4 can be found on this page. Instructions for installation after downloading are in the file: [readme.txt](https://github.com/dynac-source/DYNAC-download/blob/main/readme.txt). This file is also contained in the full package below.
 
 **MODIFICATIONS PERTAINING TO DYNAC V7R4 (28-Dec-2024)**  
 Please see the [change log](https://github.com/dynac-source/DYNAC-download/blob/main/modV7R4.txt) for a full list of changes with respect to V7R3.  
 DYNAC V7R4 has some minor additions, modifications and corrections compared to the previous revision.
-
 
 **REQUIRED SOFTWARE FOR DYNAC**  
 DYNAC needs to be compiled with gfortran, which is available from the [gfortran web site](http://gcc.gnu.org/wiki/GFortranBinaries). DYNAC has been successfully tested with gfortran/gcc 14.2.0 and older.
@@ -69,7 +66,7 @@ DGUI User Guide (pdf format) [DGUI User Guide](https://github.com/dynac-source/D
 Eugene Tanke  
 Email: dynacatgithub at gmail.com  
 
-Updated 24-Dec-2024
+Updated 28-Dec-2024
   
   
 
