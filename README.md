@@ -49,7 +49,7 @@ An alternative to the above mentioned DYNAC GUI has been developed at [MSU](http
 # DGUI V2R8-download
 **DGUI, a DYNAC Graphical User Interface**  
 DGUI V2R8 is a Python3 based GUI to DYNAC. Alternatively, the DYNAC code can be exectued from the terminal.  
-DGUI has been tested on LINUX (Mint 22 and older), MAC (Sequoia, Catalina and Mojave) and WINDOWS (11, 10) and works best with DYNAC V7R4.
+DGUI has been tested on LINUX (Mint 22 and older), MAC (Sequoia, Catalina and Mojave) and WINDOWS (11, 10) and works best with DYNAC V7R5.
 Instructions for installation after downloading are in the [DGUI User Guide](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_UG.pdf).  
 Modifications pertaining to DGUI V2R8 (27-Jul-2025) are listed in [dgui_modV2R8.txt](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_modV2R8.txt). This file also contains the changes in DGUI V2R8 as compared to previous versions.   
 
