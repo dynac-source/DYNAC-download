@@ -5,7 +5,7 @@ LINUX, MAC and WINDOWS downloads for the simulation code DYNAC V7R5 can be found
 
 **MODIFICATIONS PERTAINING TO DYNAC V7R5 (27-Jul-2024)**  
 Please see the [change log](https://github.com/dynac-source/DYNAC-download/blob/main/modV7R5.txt) for a full list of changes with respect to V7R4.  
-DYNAC V7R5 has some minor additions, modifications and corrections compared to the previous revision.
+DYNAC V7R5 has some minor additions and modifications compared to the previous revision.
 
 **REQUIRED SOFTWARE FOR DYNAC**  
 DYNAC needs to be compiled with gfortran, which is available from the [gfortran web site](http://gcc.gnu.org/wiki/GFortranBinaries). DYNAC has been successfully tested with gfortran/gcc 14.2.0 and older.
