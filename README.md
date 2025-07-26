@@ -21,7 +21,7 @@ The charge stripper model requires further development (e.g. energy loss model).
 DYNAC source, data, plot and help files (for WINDOWS, ZIP format) [dynacv7r4_w.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r4_w.zip)  
 DYNAC source, data, plot and help files (for LINUX/MAC, tar/gz format) [dynacv7r4.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r4.tar.gz)  
 
-*Note: To unzip the linux/mac version, type: tar xvfz dynacv7r4.tar.gz*   
+*Note: To unzip the linux/mac version, type: tar xvfz dynacv7r5.tar.gz*   
 
 **DYNAC V7R5 (INDIVIDUAL FILES)**  
 DYNAC User Guide (PDF format) [dynac_UG.pdf](https://github.com/dynac-source/DYNAC-download/blob/main/dynac_UG.pdf)  
@@ -38,7 +38,7 @@ Script to compile the DYNAC source (for LINUX and MAC, text format) [comv7](http
 Script to compile the dyndat source (for WINDOWS, .bat file) [complt.bat](https://github.com/dynac-source/DYNAC-download/blob/main/complt.bat)  
 Script to compile the dyndat source (for LINUX and MAC, text format) [complt](https://github.com/dynac-source/DYNAC-download/blob/main/complt)  
 
-*Note: To unzip the linux/mac version of the source, type: tar xvfz dynacv7r4_source.tar.gz*
+*Note: To unzip the linux/mac version of the source, type: tar xvfz dynacv7r5_source.tar.gz*
 
 **OTHER DYNAC UTILITIES**  
 [DGUI](https://github.com/dynac-source/DYNAC-download/blob/main/README.md#dgui-v2r8-download), a DYNAC Graphical User Interface.  
@@ -51,7 +51,7 @@ An alternative to the above mentioned DYNAC GUI has been developed at [MSU](http
 DGUI V2R8 is a Python3 based GUI to DYNAC. Alternatively, the DYNAC code can be exectued from the terminal.  
 DGUI has been tested on LINUX (Mint 22 and older), MAC (Sequoia, Catalina and Mojave) and WINDOWS (11, 10) and works best with DYNAC V7R4.
 Instructions for installation after downloading are in the [DGUI User Guide](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_UG.pdf).  
-Modifications pertaining to DGUI V2R8 (27-Jul-2025) are listed in [dgui_modV2R7.txt](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_modV2R7.txt). This file also contains the changes in DGUI V2R8 as compared to previous versions.   
+Modifications pertaining to DGUI V2R8 (27-Jul-2025) are listed in [dgui_modV2R8.txt](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_modV2R8.txt). This file also contains the changes in DGUI V2R8 as compared to previous versions.   
 
 Please refer to the DGUI User Guide for download and installation instructions.  
 DGUI source (.py) [dgui.py](https://github.com/dynac-source/DYNAC-download/blob/main/dgui.py)  
