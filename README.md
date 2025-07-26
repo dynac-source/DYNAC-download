@@ -18,8 +18,8 @@ DYNAC has been succesfully tested on LINUX (Mint 22.0 and older, Red Hat 4.4.7-1
 The charge stripper model requires further development (e.g. energy loss model).
 
 **DYNAC V7R5 (FULL PACKAGE)**  
-DYNAC source, data, plot and help files (for WINDOWS, ZIP format) [dynacv7r4_w.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r4_w.zip)  
-DYNAC source, data, plot and help files (for LINUX/MAC, tar/gz format) [dynacv7r4.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r4.tar.gz)  
+DYNAC source, data, plot and help files (for WINDOWS, ZIP format) [dynacv7r5_w.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r5_w.zip)  
+DYNAC source, data, plot and help files (for LINUX/MAC, tar/gz format) [dynacv7r5.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r5.tar.gz)  
 
 *Note: To unzip the linux/mac version, type: tar xvfz dynacv7r5.tar.gz*   
 
@@ -28,9 +28,9 @@ DYNAC User Guide (PDF format) [dynac_UG.pdf](https://github.com/dynac-source/DYN
 DYNAC input file (example) for an electron gun (text format) [egun_example2.in](https://github.com/dynac-source/DYNAC-download/blob/main/egun_example2.in)  
 DYNAC input file (example) for describing the field in an electron gun (text format; to be used with the egun example above) [egun_field.txt](https://github.com/dynac-source/DYNAC-download/files/6633699/egun_field.txt)  
 DYNAC input file for the SNS H- MEBT (Medium Energy Beam Transport) line and DTL Tank 1 (text format) [sns_mebt_dtl1.in](https://github.com/dynac-source/DYNAC-download/blob/main/sns_mebt_dtl1.in)  
-DYNAC source (for WINDOWS, ZIP format) [dynacv7r4_w_source.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r4_w_source.zip)  
+DYNAC source (for WINDOWS, ZIP format) [dynacv7r5_w_source.zip](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r5_w_source.zip)  
 Script to compile the DYNAC source (for WINDOWS, .bat file) [comv7.bat](https://github.com/dynac-source/DYNAC-download/blob/main/comv7.bat)  
-DYNAC source file (for LINUX and MAC, tar/gz format) [dynacv7r4_source.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r4_source.tar.gz)  
+DYNAC source file (for LINUX and MAC, tar/gz format) [dynacv7r5_source.tar.gz](https://github.com/dynac-source/DYNAC-download/blob/main/dynacv7r5_source.tar.gz)  
 Script to compile the DYNAC source (for LINUX and MAC, text format) [comv7](https://github.com/dynac-source/DYNAC-download/blob/main/comv7)  
 
 
