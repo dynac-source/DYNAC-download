@@ -3,7 +3,7 @@
 **DYNAC DOWNLOAD PAGE for DYNAC V7R5, a Multiparticle Beam Simulation Code for linacs and beam transport lines.**  
 LINUX, MAC and WINDOWS downloads for the simulation code DYNAC V7R5 can be found on this page. Instructions for installation after downloading are in the file: [readme.txt](https://github.com/dynac-source/DYNAC-download/blob/main/readme.txt). This file is also contained in the full package below.
 
-**MODIFICATIONS PERTAINING TO DYNAC V7R5 (27-Jul-2024)**  
+**MODIFICATIONS PERTAINING TO DYNAC V7R5 (27-Jul-2025)**  
 Please see the [change log](https://github.com/dynac-source/DYNAC-download/blob/main/modV7R5.txt) for a full list of changes with respect to V7R4.  
 DYNAC V7R5 has some minor additions and modifications compared to the previous revision.
 
@@ -41,7 +41,7 @@ Script to compile the dyndat source (for LINUX and MAC, text format) [complt](ht
 *Note: To unzip the linux/mac version of the source, type: tar xvfz dynacv7r4_source.tar.gz*
 
 **OTHER DYNAC UTILITIES**  
-[DGUI](https://github.com/dynac-source/DYNAC-download/blob/main/README.md#dgui-v2r7-download), a DYNAC Graphical User Interface.  
+[DGUI](https://github.com/dynac-source/DYNAC-download/blob/main/README.md#dgui-v2r8-download), a DYNAC Graphical User Interface.  
 [ptq2dyn.f](https://github.com/dynac-source/DYNAC-download/blob/main/ptq2dyn.f) : prepares the input data file used by the RFQPTQ card. Source file in text format, compile with:  
 *gfortran ptq2dyn.f -o ptq2dyn*  
 An alternative to the above mentioned DYNAC GUI has been developed at [MSU](https://github.com/NSCLAlt/DynacGUI).
