@@ -16,25 +16,39 @@ import numpy as np
 from numpy import exp, pi, sqrt
 from lmfit import Model
 from os.path import exists
-
 import types
+
+try:
+    from PyQt6 import QtWidgets, QtCore, QtGui, QtPrintSupport
+    from PyQt6.QtCore    import QSize, Qt, QRect, QPoint, QLocale
+    from PyQt6.QtGui     import (QColor, QTextCursor, QTextBlock, QRegion,
+            QIcon, QKeySequence, QPen, QImage, QScreen, QShortcut, QAction, 
+            QImageWriter, QPalette, QFont, QGuiApplication)
+    from PyQt6.QtGui import QPainter        
+    from PyQt6.QtWidgets import (QApplication, QCheckBox, QGroupBox,
+            QMenu, QPushButton, QRadioButton, QHBoxLayout, QWidget,
+            QLabel, QSlider, QGraphicsView, QFileDialog, QMessageBox,
+            QToolBar, QMainWindow, QDialog,
+            QVBoxLayout, QGridLayout, QInputDialog, QSpinBox, 
+            QComboBox, QGraphicsScene, QTabWidget)
+except:
+    from PyQt5 import QtWidgets, QtCore, QtGui, QtPrintSupport
+    from PyQt5.QtCore    import QSize, Qt, QRect, QPoint, QLocale
+    from PyQt5.QtGui     import (QColor, QTextCursor, QTextBlock, QRegion,
+            QIcon, QKeySequence, QPen, QImage, QScreen, 
+            QImageWriter, QPalette, QFont)
+    from PyQt5.QtGui import QPainter    
+    from PyQt5.QtWidgets import (QApplication, QCheckBox, QGroupBox,
+            QMenu, QPushButton, QRadioButton, QHBoxLayout, QWidget,
+            QLabel, QSlider, QGraphicsView, QFileDialog, QMessageBox,
+            QAction, qApp, QShortcut, QToolBar, QMainWindow, QDialog,
+            QVBoxLayout, QGridLayout, QInputDialog, QSpinBox, 
+            QComboBox, QGraphicsScene, QTabWidget)
+  
+# import pyqtgraph AFTER PyQt6                            
 import pyqtgraph as pg
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
-from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol
-
-from PyQt5 import QtWidgets, QtCore, QtGui, QtPrintSupport
-from PyQt5.QtCore    import QSize, Qt, QRect, QPoint, QLocale
-from PyQt5.QtGui     import (QColor, QTextCursor, QTextBlock, QRegion,
-        QIcon, QKeySequence, QPen, QImage, QScreen, 
-        QImageWriter, QPalette, QFont)
-from PyQt5.QtGui import QPainter
-        
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QGroupBox,
-        QMenu, QPushButton, QRadioButton, QHBoxLayout, QWidget,
-        QLabel, QSlider, QGraphicsView, QFileDialog, QMessageBox,
-        QAction, qApp, QShortcut, QToolBar, QMainWindow, QDialog,
-        QVBoxLayout, QGridLayout, QInputDialog, QSpinBox, 
-        QComboBox, QGraphicsScene)
+from pyqtgraph.graphicsItems.ScatterPlotItem import drawSymbol                                                         
 from matplotlib import cm
 # next lines in view of backward compatibility with older matplotlib versions
 try: #2024-01-18 this to allow new colormaps call; if except, older cm.get_colormap will be used instead
@@ -47,24 +61,33 @@ import colorcet as cc
 from scipy import interpolate
 from scipy import stats
 from scipy.stats import moment
-#from functools import partial
-#from sys import argv
 import argparse
 import math
 
 from PyPDF2 import PdfReader
 # next is used for icon display on taskbar in Windows
 import ctypes
+import locale 
+locale.getpreferredencoding = lambda: "UTF-8"
 
-
-#import tkinter as tk
-#from tkinter import ttk
+DBX = False
+#DBX = True
+if (DBX == True):
+# next lines can be used to find version of QT and PYQT
+    try:
+        from PyQt6.QtCore import QT_VERSION_STR, PYQT_VERSION_STR
+        print("DBX   Qt version:", QT_VERSION_STR)
+        print("DBX PYQt version:", PYQT_VERSION_STR)
+    except:
+        from PyQt5.QtCore import QT_VERSION_STR, PYQT_VERSION_STR
+        print("DBX   Qt version:", QT_VERSION_STR)
+        print("DBX PYQt version:", PYQT_VERSION_STR)
 
 ######################################################
 # set the DGUI version and its date                  #
 ######################################################
-dguiv = "DGUI V2R7"
-dguid = "28-Dec-2024"
+dguiv = "DGUI V2R8"
+dguid = "27-Jul-2025"
 dgui_v = dguiv + " " + dguid
 
 ######################################################
@@ -83,6 +106,26 @@ global emivals_selected, emivals_bottom, ABS_selected, COG_selected, NRMS
 global lut, colormap_name, last_dfpath, last_ifpath
 global prdir, prnumber, was_in_spbox
 global gr_file_ext, sw0, sw1, sw2, sw3, versiontxt, mac_os_names
+global mw_sz_x, mw_sz_y, ow_sz_x, ow_sz_y, tot_screen_width, current_tab, scaleFactor
+
+# define window sizes (main window and options window)
+mw_sz_x = 1250
+mw_sz_y = 700
+ow_sz_x = 455
+ow_sz_y = 700
+current_tab = 0
+
+# On Windows, deal with the fact, that the monitor on which the GUI windows are displayed may have
+# a different resolution than the computer screen
+
+if (platform.system() == 'Windows') :
+    if int(platform.release()) >= 8:
+#        QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)        
+#        ctypes.windll.shcore.SetProcessDpiAwareness(True)
+        scaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0) /100
+        os.environ["QT_SCALE_FACTOR"] = str(1./scaleFactor)          
+    if (DBX == True):
+        print("DBX Windows scaleFactor=",scaleFactor)    
 
 gr_file_ext="png"
         
@@ -120,10 +163,12 @@ if (platform.system() == 'Linux') :
 #    print("linux PDF by xrd")
 if (platform.system() == 'Windows') :
     acr_selected = True
-    #below to allow icon to show on w10 taskbar
-    myappid = 'mycompany.myproduct.subproduct.version'
-    # use next line instead of previous line for w11
-    #myappid = 'mycompany.myproduct.subproduct.version'
+    if int(platform.release()) < 11:    
+        #below to allow icon to show on w10 taskbar
+        myappid = 'mycompany.myproduct.subproduct.version'
+    else:   
+        # use next line instead of previous line for w11
+        myappid = 'mycompany.myproduct.subproduct.version'
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 #    print("Windows PDF by acr")
@@ -156,6 +201,7 @@ amu = 1
 ener = 0.
 xmat = xmat_p 
 NRMS = 6.
+
 
 ######################################################
 # Define command line options                        #
@@ -317,13 +363,13 @@ except OSError as e:
         
     
 if (platform.system() == 'Windows') :
-    dynpath=dynpath[:-4] + "bin"
+    dynpath=dynpath[:-4] + "bin" 
     default_dfpath=dynpath[:-3] + "datafiles"
     if (last_dfpath == ""):
         last_dfpath=default_dfpath
     if (last_ifpath == ""):
         last_ifpath=default_dfpath
-    default_ugpath=dynpath[:-3] + "help"
+    default_ugpath=dynpath[:-3] + "help"                                        
     dynpath=dynpathff    
 else:
     dynpath=dynpath[:-4] + "bin"
@@ -332,10 +378,10 @@ else:
         last_dfpath=default_dfpath
     if (last_ifpath == ""):
         last_ifpath=default_dfpath
-    default_ugpath=dynpath[:-3] + "help"
+    default_ugpath=dynpath[:-3] + "help" 
 
 myplatform=platform.system()
-systembin="DYNAC GUI running on " + platform.system() + " with DYNAC binary in " + dynpath
+systembin="DYNAC GUI running on " + platform.system() 
 
 ######################################################
 # Remove page header and footer, if present in text  #  
@@ -702,6 +748,7 @@ class checkdialog(QWidget):
 #        self.setWindowModality(Qt.ApplicationModal)
         self.setFixedWidth(800)
         self.setFixedHeight(150)
+        self.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))         
         self.gr2layout = QGridLayout()
         self.gr2layout.setSpacing(10)
         self.setLayout(self.gr2layout)
@@ -751,13 +798,14 @@ class TypeCodeInfo(QWidget):
         self.expl = (TCname.split(' ',1)[1]).split('(',1)[1]
         self.text = TCtext[1:]
         self.setFixedWidth(790)
-        self.setFixedHeight(330)       
+        self.setFixedHeight(330)
+        self.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))        
         TClabel = "Type Code " + f'{self.name}' + ": " + f'{self.expl[:len(self.expl)-1]}'                       
         TCtext = f'{self.text}'
         self.text_editor = QtWidgets.QTextEdit(self)
         self.text_editor.acceptRichText()
         self.text_editor.append(TCtext)
-        self.text_editor.moveCursor(QTextCursor.Start)        
+        self.text_editor.moveCursor(QTextCursor.MoveOperation.Start)        
         self.grlayout = QVBoxLayout()
         self.grlayout.addWidget(self.text_editor)
         self.setLayout(self.grlayout)
@@ -798,94 +846,491 @@ class spindialog(QWidget):
         self.grlayout.addWidget(self.qbtn,2,2,1,1)
           
         self.setWindowTitle("Project number selection")
-                
+        
+        
 ######################################################
-# OPTIONS LAYOUT class                               #
+# TableWidget class                                  #
 ######################################################
-class OptionsLayout(QWidget):
-    def __init__(self, MainWindow, parent=None):
-        global colormap_name, topvpos, vdel, acr_selected, evi_selected, xrd_selected 
+class MyTableWidget(QWidget):
+    def __init__(self, MainWindow, parent=None): 
+        global colormap_name, topvpos, vdel, acr_selected, evi_selected, xrd_selected            
         super().__init__(parent)
-#        self.setWindowModality(Qt.WindowModal)
         self.mymain = MainWindow
-## Create a ParameterTree widget
-        self.top_line = QtWidgets.QLabel(self)
-        self.top_line.setText("DGUI PREFERENCES AND OPTIONS SELECTION")
-        self.top_line.resize(375,25)
-        topvpos=10
-        vdel=30
-        boxesvoff = 0
-        self.top_line.move(20, topvpos)        
+        self.layout = QVBoxLayout(self)
+        
+        # Initialize tab screen
+        self.tabs = QTabWidget()
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+        self.tabs.resize(300,200)
+        
+        # Add tabs
+        self.tabs.addTab(self.tab1,"General")
+        self.tabs.addTab(self.tab2,"Dist. graphics")
+        self.tabs.setCurrentIndex(current_tab)        
+        self.tabs.tabBarClicked.connect(self.get_active_tab)        
+        
+        # Define first tab layout      
+        self.tab1.layout = QVBoxLayout()
+        #print("DBX szX szY ",ow_sz_x, ow_sz_y)   
+        self.tab1.setGeometry(QRect(0, 0, ow_sz_x, ow_sz_y))
 
-# Display name of dynac binary, read from dgui.ini
-        self.label_binary = QtWidgets.QLabel(self)
-        self.label_binary.setText("Name of DYNAC binary:")
-        self.label_binary.resize(375,25)
-        self.label_binary.move(20, topvpos+vdel)        
-        self.text_binary = QtWidgets.QTextEdit(self)
-        self.text_binary.resize(140,29)
-        self.text_binary.move(200, topvpos+vdel-1)        
-        self.text_binary.setText(dynacv)
-        self.BinBtn = QtWidgets.QPushButton('Change', self)
-        self.BinBtn.resize(80,32)
-        self.BinBtn.move(350, topvpos+vdel-2)        
+        # Define second tab layout      
+        self.tab2.layout = QVBoxLayout()
+        #print("DBX szX szY ",ow_sz_x, ow_sz_y)   
+        self.tab2.setGeometry(QRect(0, 0, ow_sz_x, ow_sz_y))
+        
+        ############################
+        # add widgets to first tab #
+        ############################
+        topvpos=5
+        vdel=30
+        boxesvoff = 0   
+
+# set DYNAC binary 
+        self.tab1.DBlabel = QtWidgets.QLabel(self.tab1)
+        self.tab1.DBlabel.setText("DYNAC binary name") 
+        self.tab1.DBlabel.resize(285,20)
+        self.tab1.DBlabel.move(150, 3) 
+        # Display name of dynac binary, read from dgui.ini
+        self.tab1.text_binary = QtWidgets.QTextEdit(self.tab1)
+        self.tab1.text_binary.resize(360,29)
+        self.tab1.text_binary.move(5, topvpos+20)
+        #self.tab1.text_binary.setStyleSheet("background-color : white;" "border: 1px solid black;")           
+        self.tab1.text_binary.setStyleSheet("QTextEdit { background-color: white ; border: 1px solid black;}")                                                                                                              
+        self.tab1.text_binary.setText(dynacv)
+        self.tab1.BinBtn = QtWidgets.QPushButton('Change', self.tab1)
+        self.tab1.BinBtn.resize(60,32)
+        self.tab1.BinBtn.move(366, topvpos+19)        
         # Add BinBtn call back
-        self.BinBtn.clicked.connect(self.change_bin)
-        self.BinBtn.setToolTip('Change the dynac executable to be used')  
+        self.tab1.BinBtn.clicked.connect(self.change_bin)
+        self.tab1.BinBtn.setToolTip('Change the DYNAC executable to be used')  
+
+# set DYNAC binary path        
+        self.tab1.label_bpath = QtWidgets.QLabel(self.tab1)
+        self.tab1.label_bpath.setText("DYNAC binary path")
+        self.tab1.label_bpath.resize(285,20)
+        self.tab1.label_bpath.move(150, topvpos+2*vdel)        
+        # Display name of dynac path        
+        self.tab1.text_bpath = QtWidgets.QTextEdit(self.tab1)
+        self.tab1.text_bpath.resize(360,69)
+        self.tab1.text_bpath.move(5, topvpos+2*vdel+20)
+        #self.tab1.text_bpath.setStyleSheet("background-color : white;" "border: 1px solid black;")
+        self.tab1.text_bpath.setStyleSheet("QTextEdit { background-color: white ; border: 1px solid black;}")         
+        self.tab1.text_bpath.setText(dynpath)
+        self.tab1.BPathBtn = QtWidgets.QPushButton('Change', self.tab1)
+        self.tab1.BPathBtn.resize(60,32)
+        self.tab1.BPathBtn.move(366, topvpos+2*vdel+20)        
+        # Add BPathBtn call back
+        self.tab1.BPathBtn.clicked.connect(self.change_bpath)
+        self.tab1.BPathBtn.setToolTip('Change the path to the DYNAC executable')
+        
+        topvpos = topvpos + 40
+# "Open User Guides (pdf) with" options box (box 4)
+        self.tab1.OptBox4 = QGroupBox(self.tab1)
+        self.tab1.OptBox4.setGeometry(QtCore.QRect(5, topvpos+4*vdel, 220, 50))
+        self.tab1.OptBox4.setTitle("Open User Guides (pdf) with")
+        # Add L radio button (coordinates within groupBox)
+        self.tab1.Optradio3 = QRadioButton(self.tab1.OptBox4)
+        self.tab1.Optradio3.setGeometry(QtCore.QRect(10, 20, 80, 25))
+        self.tab1.Optradio3.setText("Adobe")
+        # Add R radio button (coordinates within groupBox)
+        self.tab1.Optradio4 = QRadioButton(self.tab1.OptBox4)
+        self.tab1.Optradio4.setGeometry(QtCore.QRect(80, 20, 90, 25))
+        self.tab1.Optradio4.setText("Evince")
+         # Add R radio button (coordinates within groupBox)
+        self.tab1.Optradio5 = QRadioButton(self.tab1.OptBox4)
+        self.tab1.Optradio5.setGeometry(QtCore.QRect(150, 20, 90, 25))
+        self.tab1.Optradio5.setText("xrd")
+#        print("button acr, evi, xrd ",acr_selected,evi_selected,xrd_selected)
+        if acr_selected == True :
+            self.tab1.Optradio3.setChecked(True)
+        if evi_selected == True :
+            self.tab1.Optradio4.setChecked(True)
+        if xrd_selected == True :
+            self.tab1.Optradio5.setChecked(True)
+        # Add radio button 1 call back
+        self.tab1.Optradio3.clicked.connect(self.get_or3)
+        self.tab1.Optradio3.setToolTip('If selected, Acrobat reader will be used for opening User Guides')  
+        # Add radio button 2 call back
+        self.tab1.Optradio4.clicked.connect(self.get_or4)
+        self.tab1.Optradio4.setToolTip('If selected, Evince will be used for opening User Guides. Only works on linux')
+        # Add radio button 3 call back
+        self.tab1.Optradio5.clicked.connect(self.get_or5)
+        self.tab1.Optradio5.setToolTip('If selected, xreader will be used for opening User Guides. Only works on linux')
+        
+        #############################
+        # add widgets to second tab #
+        #############################
+        topvpos=5
+        vdel=30
+        boxesvoff = 0   
+
+# profile options       
+        # create "Data in profiles are" options box (box 5)
+        self.tab2.OptBox5 = QGroupBox(self.tab2)
+        self.tab2.OptBox5.setGeometry(QtCore.QRect(5, topvpos, 210, 50))
+        self.tab2.OptBox5.setTitle("Data in profiles are to be")
+        # Add profiles check box (coordinates within groupBox)        
+        self.tab2.checkBox6 = QCheckBox(self.tab2.OptBox5)
+        self.tab2.checkBox6.setGeometry(QtCore.QRect(10, 22, 60, 25))
+        self.tab2.checkBox6.setText("Raw")
+        if(pro_raw != 0):
+            self.tab2.checkBox6.setChecked(True)
+        self.tab2.checkBox6.clicked.connect(self.get_cb6)
+        # Add R check box (coordinates within groupBox)        
+        self.tab2.checkBox7 = QCheckBox(self.tab2.OptBox5)
+        self.tab2.checkBox7.setGeometry(QtCore.QRect(100, 22, 70, 25))
+        self.tab2.checkBox7.setText("Fitted")
+        if(pro_fit != 0):
+            self.tab2.checkBox7.setChecked(True)
+        self.tab2.checkBox7.clicked.connect(self.get_cb7)
+        # Add Raw check tool tip
+        self.tab2.checkBox6.setToolTip('If selected, profiles will be based on raw data')  
+        # Add Fit check tool tip
+        self.tab2.checkBox7.setToolTip('If selected, profiles will be based on a Gaussian fit')  
+
+        #create "Amplitude of fits (a.u.)" options box (box 8)
+        self.tab2.OptBox8 = QGroupBox(self.tab2)
+        self.tab2.OptBox8.setGeometry(QtCore.QRect(220, topvpos, 210, 50))
+        self.tab2.OptBox8.setTitle("Amplitude of profiles (a.u.)")
+        # Add L radio button (coordinates within groupBox)
+        self.tab2.OptradAF1 = QRadioButton(self.tab2.OptBox8)
+        self.tab2.OptradAF1.setGeometry(QtCore.QRect(10, 20, 100, 25))
+        self.tab2.OptradAF1.setText("1")
+        # Add ML radio button (coordinates within groupBox)
+        self.tab2.OptradAF2 = QRadioButton(self.tab2.OptBox8)
+        self.tab2.OptradAF2.setGeometry(QtCore.QRect(60, 20, 50, 25))
+        self.tab2.OptradAF2.setText("2")
+        # Add MR radio button (coordinates within groupBox)
+        self.tab2.OptradAF3 = QRadioButton(self.tab2.OptBox8)
+        self.tab2.OptradAF3.setGeometry(QtCore.QRect(110, 20, 50, 25))
+        self.tab2.OptradAF3.setChecked(True)
+        self.tab2.OptradAF3.setText("3")
+        # Add R radio button (coordinates within groupBox)
+        self.tab2.OptradAF4 = QRadioButton(self.tab2.OptBox8)
+        self.tab2.OptradAF4.setGeometry(QtCore.QRect(160, 20, 50, 25))
+        self.tab2.OptradAF4.setText("4")
+        # Add AF radio button 1 call back
+        self.tab2.OptradAF1.clicked.connect(self.get_orAF1)
+        self.tab2.OptradAF1.setToolTip('Small amplitude for fits and raw data')  
+        # Add AF radio button 2 call back
+        self.tab2.OptradAF2.clicked.connect(self.get_orAF2)
+        self.tab2.OptradAF2.setToolTip('Small to medium amplitude for fits and raw data')  
+        # Add AF radio button 3 call back
+        self.tab2.OptradAF3.clicked.connect(self.get_orAF3)
+        self.tab2.OptradAF3.setToolTip('Medium to large amplitude for fits and raw data')  
+        # Add AF radio button 4 call back
+        self.tab2.OptradAF4.clicked.connect(self.get_orAF4)
+        self.tab2.OptradAF4.setToolTip('Large amplitude for fits and raw data')  
+
+        
+# Ellipse options 
+        self.tab2.OptBox12 = QGroupBox(self.tab2)
+        self.tab2.OptBox12.setGeometry(QtCore.QRect(5, topvpos + 2*vdel, 150, 50))
+        self.tab2.OptBox12.setTitle("Ellipse options")
+        # Add profiles check box (coordinates within groupBox)        
+        self.tab2.checkBox12 = QCheckBox(self.tab2.OptBox12)
+        self.tab2.checkBox12.setGeometry(QtCore.QRect(10, 22, 120, 25))
+        self.tab2.checkBox12.setText("Plot ellipses")
+        #        self.checkBox12.setChecked(True)
+        self.tab2.checkBox12.clicked.connect(self.get_cb12)
+        # Add "Plot ellipses" check tool tip
+        self.tab2.checkBox12.setToolTip('If selected, ellipses will be plotted based on NRMS times the RMS emittance size')
+        
+        # Display NRMS, read from dpu.ini  options box (box 11)
+        self.tab2.label_nrms = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_nrms.setText("NRMS:")
+        self.tab2.label_nrms.resize(275,25)
+        self.tab2.label_nrms.move(165, topvpos + 2*vdel -4)        
+        self.tab2.text_nrms = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_nrms.resize(50,31)
+        self.tab2.text_nrms.move(165, topvpos+int(2.5*vdel)+4)
+        self.tab2.text_nrms.setStyleSheet("background-color : white;" "border: 1px solid black;")          
+        txtnrms = str(NRMS)      
+        self.tab2.text_nrms.setText(txtnrms)
+        self.tab2.NRMSBtn = QtWidgets.QPushButton('Change', self.tab2)
+        self.tab2.NRMSBtn.resize(75,32)
+        self.tab2.NRMSBtn.move(225, topvpos+int(2.5*vdel)+3)        
+        # Add NRMSBtn call back
+        self.tab2.NRMSBtn.clicked.connect(self.change_nrms)
+        self.tab2.NRMSBtn.setToolTip("Change the number of RMS multiples for ellipses") 
+        
+#       create "Save graphs as:" options box (box 23)
+        self.tab2.OptBox23 = QGroupBox(self.tab2)
+        self.tab2.OptBox23.setGeometry(QtCore.QRect(220, topvpos+4*vdel, 210, 50))
+        self.tab2.OptBox23.setTitle("Save graphs as:")
+        # Add L radio button (coordinates within groupBox)
+        self.tab2.OptPlotit1 = QRadioButton(self.tab2.OptBox23)
+        self.tab2.OptPlotit1.setGeometry(QtCore.QRect(10, 20, 100, 25))
+        self.tab2.OptPlotit1.setText("png")
+        self.tab2.OptPlotit1.setChecked(True)
+        # Add M radio button (coordinates within groupBox)
+        self.tab2.OptPlotit2 = QRadioButton(self.tab2.OptBox23)
+        self.tab2.OptPlotit2.setGeometry(QtCore.QRect(65, 20, 50, 25))
+        self.tab2.OptPlotit2.setText("jpeg")
+#        # Add R radio button (coordinates within groupBox) GIF not generally supported on all platforms by QT
+#        bmp and tiff supported by QT, but not out of the box with gnuplot (unless initially requested 
+#        at installation time (?))
+#        self.tab2.OptPlotit3 = QRadioButton(self.tab2.OptBox23)
+#        self.tab2.OptPlotit3.setGeometry(QtCore.QRect(120, 20, 60, 25))
+#        self.tab2.OptPlotit3.setText("gif")
+        # Add Plotit radio button 1 call back
+        self.tab2.OptPlotit1.clicked.connect(self.get_Plot1)
+        self.tab2.OptPlotit1.setToolTip('Store graphs as png files')  
+        # Add Plotit radio button 2 call back
+        self.tab2.OptPlotit2.clicked.connect(self.get_Plot2)
+        self.tab2.OptPlotit2.setToolTip('Store graphs as jpeg files')  
+#        # Add Plotit radio button 3 call back GIF not generally supported on all platforms by QT
+#        self.tab2.OptPlotit3.clicked.connect(self.get_Plot3)
+#        self.tab2.OptPlotit3.setToolTip('Store plotit graphs as gif files')  
+        
+#       create "Emittance values" option box 
+        self.tab2.OptBox20 = QGroupBox(self.tab2)
+        self.tab2.OptBox20.setGeometry(QtCore.QRect(5, topvpos+4*vdel, 210, 50))
+        self.tab2.OptBox20.setTitle("Emittance values")
+        # Add Display check box (coordinates within groupBox)        
+        self.tab2.checkBox20 = QCheckBox(self.tab2.OptBox20)
+        self.tab2.checkBox20.setGeometry(QtCore.QRect(10, 22, 70, 25))
+        self.tab2.checkBox20.setText("Display") 
+        self.tab2.checkBox20.clicked.connect(self.set_dev)
+        self.tab2.checkBox20.setToolTip('If selected, displays RMS emittances on top 3 distribution plots')  
+        # Add "at the bottom" check box (location of emittance values in plot)        
+        self.tab2.checkBox21 = QCheckBox(self.tab2.OptBox20)
+        self.tab2.checkBox21.setGeometry(QtCore.QRect(85, 22, 110, 25))
+        self.tab2.checkBox21.setText("at the bottom") 
+        self.tab2.checkBox21.clicked.connect(self.set_emi_pos)
+        self.tab2.checkBox21.setToolTip('If selected, changes location of the display values to the bottom of the plots') 
+        
+        
+#       create "Graph limits based on" options box (box 7)
+        self.tab2.OptBox7 = QGroupBox(self.tab2)
+        self.tab2.OptBox7.setGeometry(QtCore.QRect(5, topvpos + 6*vdel, 210, 50))
+        self.tab2.OptBox7.setTitle("Graph limits based on")
+        # Add L radio button (coordinates within groupBox)
+        self.tab2.OptradGL1 = QRadioButton(self.tab2.OptBox7)
+        self.tab2.OptradGL1.setGeometry(QtCore.QRect(10, 20, 100, 25))
+        self.tab2.OptradGL1.setText("Auto")
+        self.tab2.OptradGL1.setChecked(True)
+        # Add R radio button (coordinates within groupBox)
+        self.tab2.OptradGL2 = QRadioButton(self.tab2.OptBox7)
+        self.tab2.OptradGL2.setGeometry(QtCore.QRect(100, 20, 60, 25))
+        self.tab2.OptradGL2.setText("User")
+        # Add GL radio button 1 call back
+        self.tab2.OptradGL1.clicked.connect(self.get_orGL1)
+        self.tab2.OptradGL1.setToolTip('If selected, auto range will be used')  
+        # Add GL radio button 2 call back
+        self.tab2.OptradGL2.clicked.connect(self.get_orGL2)
+        self.tab2.OptradGL2.setToolTip('If selected, user defined settings will be used')  
+        
+# Create "Plot center options" options box (box 14)
+        self.tab2.OptBox14 = QGroupBox(self.tab2)
+        self.tab2.OptBox14.setGeometry(QtCore.QRect(220, topvpos+6*vdel, 210, 50))
+        self.tab2.OptBox14.setTitle("Plot center options")
+#       create top upper options box buttons (within box 14)        
+        # Add L radio button (coordinates within OptBox14
+        self.tab2.radOptABS = QRadioButton(self.tab2.OptBox14)
+        self.tab2.radOptABS.setGeometry(QtCore.QRect(10, 20, 90, 25))
+        self.tab2.radOptABS.setText("Absolute")        
+        self.tab2.radOptABS.setChecked(True)
+        # Add L radio button call back
+        self.tab2.radOptABS.clicked.connect(self.get_rOptABS)
+        self.tab2.radOptABS.setToolTip("Place distributions with respect to abolute reference axis")  
+        # Add R radio button (coordinates within OptBox14)
+        self.tab2.radOptCOG = QRadioButton(self.tab2.OptBox14)
+        self.tab2.radOptCOG.setGeometry(QtCore.QRect(110, 20, 70, 25))
+        self.tab2.radOptCOG.setText("COG")
+        # Add R radio button call back
+        self.tab2.radOptCOG.clicked.connect(self.get_rOptCOG)
+        self.tab2.radOptCOG.setToolTip("Place distributions with respect to COG")  
+         
+# Display graph limits, read from dpu.ini  options box
+        self.tab2.label_xmin = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_xmin.setText("Xmin:")
+        self.tab2.label_xmin.resize(275,25)
+        self.tab2.label_xmin.move(5, topvpos+int(7.5*vdel)+6)        
+        self.tab2.text_xmin = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_xmin.resize(50,29)
+        self.tab2.text_xmin.move(5, topvpos+8*vdel+14)
+        self.tab2.text_xmin.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(xvals[0])      
+        self.tab2.text_xmin.setText(txtminmax)
+        self.tab2.label_xmax = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_xmax.setText("Xmax:")
+        self.tab2.label_xmax.resize(275,25)
+        self.tab2.label_xmax.move(5, topvpos+9*vdel+12)        
+        self.tab2.text_xmax = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_xmax.resize(50,29)
+        self.tab2.text_xmax.move(5, topvpos+int(9.5*vdel)+20)
+        self.tab2.text_xmax.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(xvals[1])
+        self.tab2.text_xmax.setText(txtminmax)
+        #              
+        self.tab2.label_xpmin = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_xpmin.setText("XPmin:")
+        self.tab2.label_xpmin.resize(275,25)
+        self.tab2.label_xpmin.move(79, topvpos+int(7.5*vdel)+6)        
+        self.tab2.text_xpmin = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_xpmin.resize(50,29)
+        self.tab2.text_xpmin.move(79, topvpos+8*vdel+14)
+        self.tab2.text_xpmin.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(xpvals[0])      
+        self.tab2.text_xpmin.setText(txtminmax)
+        self.tab2.label_xpmax = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_xpmax.setText("XPmax:")
+        self.tab2.label_xpmax.resize(275,25)
+        self.tab2.label_xpmax.move(79, topvpos+9*vdel+12)        
+        self.tab2.text_xpmax = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_xpmax.resize(50,29)
+        self.tab2.text_xpmax.move(79, topvpos+int(9.5*vdel)+20)
+        self.tab2.text_xpmax.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(xpvals[1])
+        self.tab2.text_xpmax.setText(txtminmax)
+        #              
+        self.tab2.label_ymin = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_ymin.setText("Ymin:")
+        self.tab2.label_ymin.resize(275,25)
+        self.tab2.label_ymin.move(153, topvpos+int(7.5*vdel)+6)        
+        self.tab2.text_ymin = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_ymin.resize(50,29)
+        self.tab2.text_ymin.move(153, topvpos+8*vdel+14)
+        self.tab2.text_ymin.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(yvals[0])      
+        self.tab2.text_ymin.setText(txtminmax)
+        self.tab2.label_ymax = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_ymax.setText("Ymax:")
+        self.tab2.label_ymax.resize(275,25)
+        self.tab2.label_ymax.move(153, topvpos+9*vdel+12)        
+        self.tab2.text_ymax = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_ymax.resize(50,29)
+        self.tab2.text_ymax.move(153, topvpos+int(9.5*vdel)+20)
+        self.tab2.text_ymax.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(yvals[1])      
+        self.tab2.text_ymax.setText(txtminmax)
+        #              
+        self.tab2.label_ypmin = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_ypmin.setText("YPmin:")
+        self.tab2.label_ypmin.resize(275,25)
+        self.tab2.label_ypmin.move(227, topvpos+int(7.5*vdel)+6)        
+        self.tab2.text_ypmin = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_ypmin.resize(50,29)
+        self.tab2.text_ypmin.move(227, topvpos+8*vdel+14)
+        self.tab2.text_ypmin.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(ypvals[0])      
+        self.tab2.text_ypmin.setText(txtminmax)
+        self.tab2.label_ypmax = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_ypmax.setText("YPmax:")
+        self.tab2.label_ypmax.resize(275,25)
+        self.tab2.label_ypmax.move(227, topvpos+9*vdel+12)        
+        self.tab2.text_ypmax = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_ypmax.resize(50,29)
+        self.tab2.text_ypmax.move(227, topvpos+int(9.5*vdel)+20)
+        self.tab2.text_ypmax.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(ypvals[1])      
+        self.tab2.text_ypmax.setText(txtminmax)
+        #
+        self.tab2.label_zmin = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_zmin.setText("Zmin:")
+        self.tab2.label_zmin.resize(275,25)
+        self.tab2.label_zmin.move(301, topvpos+int(7.5*vdel)+6)        
+        self.tab2.text_zmin = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_zmin.resize(50,29)
+        self.tab2.text_zmin.move(301, topvpos+8*vdel+14)
+        self.tab2.text_zmin.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(zvals[0])      
+        self.tab2.text_zmin.setText(txtminmax)
+        self.tab2.label_zmax = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_zmax.setText("Zmax:")
+        self.tab2.label_zmax.resize(275,25)
+        self.tab2.label_zmax.move(301, topvpos+9*vdel+12)        
+        self.tab2.text_zmax = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_zmax.resize(50,29)
+        self.tab2.text_zmax.move(301, topvpos+int(9.5*vdel)+20)
+        self.tab2.text_zmax.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(zvals[1])      
+        self.tab2.text_zmax.setText(txtminmax)
+        #
+        self.tab2.label_zpmin = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_zpmin.setText("ZPmin:")
+        self.tab2.label_zpmin.resize(275,25)
+        self.tab2.label_zpmin.move(375, topvpos+int(7.5*vdel)+6)        
+        self.tab2.text_zpmin = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_zpmin.resize(50,29)
+        self.tab2.text_zpmin.move(375, topvpos+8*vdel+14)
+        self.tab2.text_zpmin.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(zpvals[0])      
+        self.tab2.text_zpmin.setText(txtminmax)
+        self.tab2.label_zpmax = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_zpmax.setText("ZPmax:")
+        self.tab2.label_zpmax.resize(275,25)
+        self.tab2.label_zpmax.move(375, topvpos+9*vdel+12)        
+        self.tab2.text_zpmax = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_zpmax.resize(50,29)
+        self.tab2.text_zpmax.move(375, topvpos+int(9.5*vdel)+20)
+        self.tab2.text_zpmax.setStyleSheet("background-color : white;" "border: 1px solid black;")         
+        txtminmax = str(zpvals[1])      
+        self.tab2.text_zpmax.setText(txtminmax)
+        
+        self.tab2.ChangeLimitsBtn = QtWidgets.QPushButton('Update graph limits', self.tab2)
+        self.tab2.ChangeLimitsBtn.resize(420,32)
+        self.tab2.ChangeLimitsBtn.move(5, topvpos+int(11*vdel)+10)        
+        # Add ChangeLimitsBtn call back
+        self.tab2.ChangeLimitsBtn.clicked.connect(self.change_limits)
+        self.tab2.ChangeLimitsBtn.setToolTip("Change the graph limits")  
 
 #       create "Density plot method" options box (box 1)
-        self.OptBox1 = QGroupBox(self)
-        self.OptBox1.setGeometry(QtCore.QRect(10, topvpos+2*vdel, 220, 50))
-        self.OptBox1.setTitle("Density plot method")
+        self.tab2.OptBox1 = QGroupBox(self.tab2)
+        self.tab2.OptBox1.setGeometry(QtCore.QRect(5, topvpos + 13*vdel, 210, 50))
+        self.tab2.OptBox1.setTitle("Density plot method")
         # Add L radio button (coordinates within groupBox)
-        self.Optradio1 = QRadioButton(self.OptBox1)
-        self.Optradio1.setGeometry(QtCore.QRect(10, 20, 120, 25))
-        self.Optradio1.setText("Interpolation")
-        self.Optradio1.setChecked(True)
+        self.tab2.Optradio1 = QRadioButton(self.tab2.OptBox1)
+        self.tab2.Optradio1.setGeometry(QtCore.QRect(10, 20, 120, 25))
+        self.tab2.Optradio1.setText("Interpolation")
+        self.tab2.Optradio1.setChecked(True)
         # Add R radio button (coordinates within groupBox)
-        self.Optradio2 = QRadioButton(self.OptBox1)
-        self.Optradio2.setGeometry(QtCore.QRect(150, 20, 60, 25))
-        self.Optradio2.setText("KDE")
+        self.tab2.Optradio2 = QRadioButton(self.tab2.OptBox1)
+        self.tab2.Optradio2.setGeometry(QtCore.QRect(145, 20, 60, 25))
+        self.tab2.Optradio2.setText("KDE")
         # Add radio button 1 call back
-        self.Optradio1.clicked.connect(self.get_or1)
-        self.Optradio1.setToolTip('If selected, use interpolation between histogrammed data points')  
+        self.tab2.Optradio1.clicked.connect(self.get_or1)
+        self.tab2.Optradio1.setToolTip('If selected, use interpolation between histogrammed data points')  
         # Add radio button 2 call back
-        self.Optradio2.clicked.connect(self.get_or2)
-        self.Optradio2.setToolTip('If selected, use KDE method')  
+        self.tab2.Optradio2.clicked.connect(self.get_or2)
+        self.tab2.Optradio2.setToolTip('If selected, use KDE method')  
 
 #       create "Number of bins for KDE plots" options box (box 3)
-        self.OptBox3 = QGroupBox(self)
-        self.OptBox3.setGeometry(QtCore.QRect(235, topvpos+2*vdel, 210, 50))
-        self.OptBox3.setTitle("# of bins for KDE plots")
+        self.tab2.OptBox3 = QGroupBox(self.tab2)
+        self.tab2.OptBox3.setGeometry(QtCore.QRect(220, topvpos + 13*vdel, 210, 50))
+        self.tab2.OptBox3.setTitle("# of bins for KDE plots")
         # Add L radio button (coordinates within groupBox)
-        self.OptradKDE1 = QRadioButton(self.OptBox3)
-        self.OptradKDE1.setGeometry(QtCore.QRect(10, 20, 100, 25))
-        self.OptradKDE1.setText("50")
-        self.OptradKDE1.setChecked(True)
+        self.tab2.OptradKDE1 = QRadioButton(self.tab2.OptBox3)
+        self.tab2.OptradKDE1.setGeometry(QtCore.QRect(10, 20, 100, 25))
+        self.tab2.OptradKDE1.setText("50")
+        self.tab2.OptradKDE1.setChecked(True)
         # Add M radio button (coordinates within groupBox)
-        self.OptradKDE2 = QRadioButton(self.OptBox3)
-        self.OptradKDE2.setGeometry(QtCore.QRect(65, 20, 50, 25))
-        self.OptradKDE2.setText("75")
+        self.tab2.OptradKDE2 = QRadioButton(self.tab2.OptBox3)
+        self.tab2.OptradKDE2.setGeometry(QtCore.QRect(65, 20, 50, 25))
+        self.tab2.OptradKDE2.setText("75")
         # Add R radio button (coordinates within groupBox)
-        self.OptradKDE3 = QRadioButton(self.OptBox3)
-        self.OptradKDE3.setGeometry(QtCore.QRect(120, 20, 60, 25))
-        self.OptradKDE3.setText("100")
+        self.tab2.OptradKDE3 = QRadioButton(self.tab2.OptBox3)
+        self.tab2.OptradKDE3.setGeometry(QtCore.QRect(120, 20, 60, 25))
+        self.tab2.OptradKDE3.setText("100")
         # Add KDE radio button 1 call back
-        self.OptradKDE1.clicked.connect(self.get_orKDE1)
-        self.OptradKDE1.setToolTip('If selected, use 50 bins (fast)')  
+        self.tab2.OptradKDE1.clicked.connect(self.get_orKDE1)
+        self.tab2.OptradKDE1.setToolTip('If selected, use 50 bins (fast)')  
         # Add KDE radio button 2 call back
-        self.OptradKDE2.clicked.connect(self.get_orKDE2)
-        self.OptradKDE2.setToolTip('If selected, use 75 bins (slow)')  
+        self.tab2.OptradKDE2.clicked.connect(self.get_orKDE2)
+        self.tab2.OptradKDE2.setToolTip('If selected, use 75 bins (slow)')  
         # Add KDE radio button 3 call back
-        self.OptradKDE3.clicked.connect(self.get_orKDE3)
-        self.OptradKDE3.setToolTip('If selected, use 100 bins (very slow)')  
-
+        self.tab2.OptradKDE3.clicked.connect(self.get_orKDE3)
+        self.tab2.OptradKDE3.setToolTip('If selected, use 100 bins (very slow)')  
+        
 #       create "colormap" options box 
-        self.label_cmn = QtWidgets.QLabel(self)
-        self.label_cmn.setText("Color map:")
-        self.label_cmn.resize(275,25)
-        self.comboBox = QtWidgets.QComboBox(self)
-        self.comboItems = {1: "default", 2: "gnuplot2_r", 3: "gist_earth_r", 4: "gist_stern",
+        self.tab2.label_cmn = QtWidgets.QLabel(self.tab2)
+        self.tab2.label_cmn.setText("Color map:")
+        self.tab2.label_cmn.resize(275,25)
+        self.tab2.comboBox = QtWidgets.QComboBox(self.tab2)
+        self.tab2.comboItems = {1: "default", 2: "gnuplot2_r", 3: "gist_earth_r", 4: "gist_stern",
             5: "viridis", 6: "nipy_spectral", 7: "jet", 8: "jet_white", 9: "diverging_rainbow_bgymr_45_85_c67",
             10: "rainbow_bgyr_35_85_c72", 11: "linear_tritanopic_krjcw_5_98_c46",
             12: "linear_worb_100_25_c53", 13: "linear_wcmr_100_45_c42",
@@ -896,52 +1341,52 @@ class OptionsLayout(QWidget):
         indx=1
         while indx < 16:
 #            if(colormap_name != self.comboItems.get(indx)):
-            self.comboBox.addItem(self.comboItems.get(indx))
+            self.tab2.comboBox.addItem(self.tab2.comboItems.get(indx))
             indx=indx + 1
         if (platform.system() == 'Windows') :
-            self.label_cmn.move(125, topvpos+4*vdel-2)        
-            self.comboBox.move(198, topvpos+4*vdel)        
+            self.tab2.label_cmn.move(105, topvpos + 15*vdel +8)        
+            self.tab2.comboBox.move(178,  topvpos + 15*vdel +10)        
         if (platform.system() == 'Linux') :
-            self.label_cmn.move(125, topvpos+4*vdel-6)        
-            self.comboBox.move(198, topvpos+4*vdel-4)        
+            self.tab2.label_cmn.move(95, topvpos + 15*vdel +4)        
+            self.tab2.comboBox.move(168, topvpos + 15*vdel +6)        
         if (platform.system() == 'Darwin') :  
-            self.label_cmn.move(115, topvpos+4*vdel-2)        
-            self.comboBox.move(180, topvpos+4*vdel-4)
+            self.tab2.label_cmn.move(95, topvpos + 15*vdel +8)        
+            self.tab2.comboBox.move(160, topvpos + 15*vdel +6)
 #        if(sys.version_info[0] == 3) :
 #            if(sys.version_info[1] < 9 ) :
 #                self.comboBox.activated[str].connect(self.cm_choice)  <-- pyqt5 (no longer needed; [int] for pyqt6) 
-        self.comboBox.activated.connect(self.cm_choice)          
-        self.comboBox.setToolTip('Select the colormap to be used for density plots')  
-                
+        self.tab2.comboBox.activated.connect(self.cm_choice)          
+        self.tab2.comboBox.setToolTip('Select the colormap to be used for density plots')  
+       
 #       create "Threshold for density plot" options box (box 2)
-        self.OptBox2 = QGroupBox(self)
-        self.OptBox2.setGeometry(QtCore.QRect(10, topvpos+5*vdel, 220, 50))
-        self.OptBox2.setTitle("Threshold for density plot")
+        self.tab2.OptBox2 = QGroupBox(self.tab2)
+        self.tab2.OptBox2.setGeometry(QtCore.QRect(5, topvpos + 16*vdel, 210, 50))
+        self.tab2.OptBox2.setTitle("Threshold for density plot")
         # Add slider 
-        self.Optsld1 = QSlider(Qt.Orientation.Horizontal, self.OptBox2)
-        self.Optsld1.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.Optsld1.setGeometry(20, 22, 100, 25)
-        self.Optsld1.setValue(SV1)
-        self.Optsld1.valueChanged[int].connect(self.changeSV1)
-        self.Optsld1.setToolTip('Change the threshold for the density plots')  
+        self.tab2.Optsld1 = QSlider(Qt.Orientation.Horizontal, self.tab2.OptBox2)
+        self.tab2.Optsld1.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.tab2.Optsld1.setGeometry(20, 22, 100, 25)
+        self.tab2.Optsld1.setValue(SV1)
+        self.tab2.Optsld1.valueChanged[int].connect(self.changeSV1)
+        self.tab2.Optsld1.setToolTip('Change the threshold for the density plots')  
         # Add slider labels        
-        self.OptSL1a = QLabel(self.OptBox2)
-        self.OptSL1a.setText("0")
-        self.OptSL1a.setGeometry( 10, 22, 20, 20)
-        self.OptSL1b = QLabel(self.OptBox2)
-        self.OptSL1b.setText("99")
-        self.OptSL1b.setGeometry(125, 22, 20, 20)
-        self.OptSL1c = QLabel(self.OptBox2)
-        self.OptSL1c.setText(str(SV1))
-        self.OptSL1c.setGeometry( 150, 22, 20, 20)
+        self.tab2.OptSL1a = QLabel(self.tab2.OptBox2)
+        self.tab2.OptSL1a.setText("0")
+        self.tab2.OptSL1a.setGeometry( 10, 22, 20, 20)
+        self.tab2.OptSL1b = QLabel(self.tab2.OptBox2)
+        self.tab2.OptSL1b.setText("99")
+        self.tab2.OptSL1b.setGeometry(125, 22, 20, 20)
+        self.tab2.OptSL1c = QLabel(self.tab2.OptBox2)
+        self.tab2.OptSL1c.setText(str(SV1))
+        self.tab2.OptSL1c.setGeometry( 150, 22, 20, 20)
 
 #       create colorbar based on selected colormap 
 # Get the LUT corresponding to the selected colormap
         cm_lut(colormap_name,0)
         #Static plot widget is used here to create a colorbar
-        self.staticPlt = pg.PlotWidget(self)
+        self.tab2.staticPlt = pg.PlotWidget(self.tab2)
         #Set background of colorbar to white:
-        self.staticPlt.setBackground((252,252,245, 255))
+        self.tab2.staticPlt.setBackground((252,252,245, 255))
         xmin=0.
         xmax=99.
         ymin=0.
@@ -958,488 +1403,72 @@ class OptionsLayout(QWidget):
             x[indx,1]= indx
             y[indx,0]=ymin
             y[indx,1]=ymax
-            self.staticPlt.plot(x[indx,],y[indx,], pen=QPen(QColor(int(lut[indice,0]), int(lut[indice,1]), int(lut[indice,2]))))
+            self.tab2.staticPlt.plot(x[indx,],y[indx,], pen=QPen(QColor(int(lut[indice,0]), int(lut[indice,1]), int(lut[indice,2]))))
             indx=indx + 1
 #        staticPlt.setTitle(title='Colorbar')
-        self.staticPlt.showAxis('left', show=False)
+        self.tab2.staticPlt.showAxis('left', show=False)
 #        staticPlt.move(215,94)
-        self.staticPlt.move(235,topvpos+4*vdel)
+        self.tab2.staticPlt.move(235,topvpos)
 #        staticPlt.resize(175,55)
-        self.staticPlt.resize(210,55)
+        self.tab2.staticPlt.resize(210,55)
         if (platform.system() == 'Windows') :
-            self.staticPlt.move(235,topvpos+4*vdel+24)
-            self.staticPlt.resize(210,55)
+            self.tab2.staticPlt.move(218,topvpos+ 16*vdel +14)
+            self.tab2.staticPlt.resize(210,55)
         if (platform.system() == 'Linux') :
-            self.staticPlt.move(235,topvpos+4*vdel+24)
-            self.staticPlt.resize(200,55)
+            self.tab2.staticPlt.move(225,topvpos+ 16*vdel +14)
+            self.tab2.staticPlt.resize(200,55)
         if (platform.system() == 'Darwin') :  
-            self.staticPlt.move(235,topvpos+4*vdel+24)
-            self.staticPlt.resize(200,55)
-        self.staticPlt.setToolTip('This is the colormap used for density plots')  
-        
-#       create "Data in profiles are" options box (box 5)
-        self.OptBox5 = QGroupBox(self)
-        self.OptBox5.setGeometry(QtCore.QRect(10, topvpos+7*vdel, 220, 50))
-        self.OptBox5.setTitle("Data in profiles are to be")
-        # Add profiles check box (coordinates within groupBox)        
-        self.checkBox6 = QCheckBox(self.OptBox5)
-        self.checkBox6.setGeometry(QtCore.QRect(10, 22, 60, 25))
-        self.checkBox6.setText("Raw")
-        if(pro_raw != 0):
-            self.checkBox6.setChecked(True)
-        self.checkBox6.clicked.connect(self.get_cb6)
-        # Add R check box (coordinates within groupBox)        
-        self.checkBox7 = QCheckBox(self.OptBox5)
-        self.checkBox7.setGeometry(QtCore.QRect(100, 22, 70, 25))
-        self.checkBox7.setText("Fitted")
-        if(pro_fit != 0):
-            self.checkBox7.setChecked(True)
-        self.checkBox7.clicked.connect(self.get_cb7)
-        # Add Raw check tool tip
-        self.checkBox6.setToolTip('If selected, profiles will be based on raw data')  
-        # Add Fit check tool tip
-        self.checkBox7.setToolTip('If selected, profiles will be based on a Gaussian fit')  
-
-#       create "Amplitude of fits (a.u.)" options box (box 8)
-        self.OptBox8 = QGroupBox(self)
-        self.OptBox8.setGeometry(QtCore.QRect(235, topvpos+7*vdel, 210, 50))
-        self.OptBox8.setTitle("Amplitude of profiles (a.u.)")
-        # Add L radio button (coordinates within groupBox)
-        self.OptradAF1 = QRadioButton(self.OptBox8)
-        self.OptradAF1.setGeometry(QtCore.QRect(10, 20, 100, 25))
-        self.OptradAF1.setText("1")
-        # Add ML radio button (coordinates within groupBox)
-        self.OptradAF2 = QRadioButton(self.OptBox8)
-        self.OptradAF2.setGeometry(QtCore.QRect(60, 20, 50, 25))
-        self.OptradAF2.setText("2")
-        # Add MR radio button (coordinates within groupBox)
-        self.OptradAF3 = QRadioButton(self.OptBox8)
-        self.OptradAF3.setGeometry(QtCore.QRect(110, 20, 50, 25))
-        self.OptradAF3.setChecked(True)
-        self.OptradAF3.setText("3")
-        # Add R radio button (coordinates within groupBox)
-        self.OptradAF4 = QRadioButton(self.OptBox8)
-        self.OptradAF4.setGeometry(QtCore.QRect(160, 20, 50, 25))
-        self.OptradAF4.setText("4")
-        # Add AF radio button 1 call back
-        self.OptradAF1.clicked.connect(self.get_orAF1)
-        self.OptradAF1.setToolTip('Small amplitude for fits and raw data')  
-        # Add AF radio button 2 call back
-        self.OptradAF2.clicked.connect(self.get_orAF2)
-        self.OptradAF2.setToolTip('Small to medium amplitude for fits and raw data')  
-        # Add AF radio button 3 call back
-        self.OptradAF3.clicked.connect(self.get_orAF3)
-        self.OptradAF3.setToolTip('Medium to large amplitude for fits and raw data')  
-        # Add AF radio button 4 call back
-        self.OptradAF4.clicked.connect(self.get_orAF4)
-        self.OptradAF4.setToolTip('Large amplitude for fits and raw data')  
-
-#       create "Graph limits based on" options box (box 7)
-        self.OptBox7 = QGroupBox(self)
-        self.OptBox7.setGeometry(QtCore.QRect(10, topvpos+9*vdel, 220, 50))
-        self.OptBox7.setTitle("Graph limits based on")
-        # Add L radio button (coordinates within groupBox)
-        self.OptradGL1 = QRadioButton(self.OptBox7)
-        self.OptradGL1.setGeometry(QtCore.QRect(10, 20, 100, 25))
-        self.OptradGL1.setText("Auto")
-        self.OptradGL1.setChecked(True)
-        # Add R radio button (coordinates within groupBox)
-        self.OptradGL2 = QRadioButton(self.OptBox7)
-        self.OptradGL2.setGeometry(QtCore.QRect(100, 20, 60, 25))
-        self.OptradGL2.setText("User")
-        # Add GL radio button 1 call back
-        self.OptradGL1.clicked.connect(self.get_orGL1)
-        self.OptradGL1.setToolTip('If selected, auto range will be used')  
-        # Add GL radio button 2 call back
-        self.OptradGL2.clicked.connect(self.get_orGL2)
-        self.OptradGL2.setToolTip('If selected, user defined settings will be used')  
-
-# Create top right options box, plot centering (box 14)
-        self.OptBox14 = QGroupBox(self)
-        self.OptBox14.setGeometry(QtCore.QRect(235, topvpos+9*vdel, 210, 50))
-        self.OptBox14.setTitle("Plot center options")
-#       create top upper options box buttons (within box 14)        
-        # Add L radio button (coordinates within OptBox14
-        self.radOptABS = QRadioButton(self.OptBox14)
-        self.radOptABS.setGeometry(QtCore.QRect(10, 20, 90, 25))
-        self.radOptABS.setText("Absolute")        
-        self.radOptABS.setChecked(True)
-        # Add L radio button call back
-        self.radOptABS.clicked.connect(self.get_rOptABS)
-        self.radOptABS.setToolTip("Place distributions with respect to abolute reference axis")  
-        # Add R radio button (coordinates within OptBox14)
-        self.radOptCOG = QRadioButton(self.OptBox14)
-        self.radOptCOG.setGeometry(QtCore.QRect(110, 20, 70, 25))
-        self.radOptCOG.setText("COG")
-        # Add R radio button call back
-        self.radOptCOG.clicked.connect(self.get_rOptCOG)
-        self.radOptCOG.setToolTip("Place distributions with respect to COG")  
-
-#       create "Ellipse options" options box (box 12)
-        self.OptBox12 = QGroupBox(self)
-        self.OptBox12.setGeometry(QtCore.QRect(10, topvpos+11*vdel, 150, 50))
-        self.OptBox12.setTitle("Ellipse options")
-        # Add profiles check box (coordinates within groupBox)        
-        self.checkBox12 = QCheckBox(self.OptBox12)
-        self.checkBox12.setGeometry(QtCore.QRect(10, 22, 120, 25))
-        self.checkBox12.setText("Plot ellipses")
-#        self.checkBox12.setChecked(True)
-        self.checkBox12.clicked.connect(self.get_cb12)
-        # Add "Plot ellipses" check tool tip
-        self.checkBox12.setToolTip('If selected, ellipses will be plotted based on NRMS times the RMS emittance size')  
-# Display NRMS, read from dpu.ini  options box (box 11)
-        self.label_nrms = QtWidgets.QLabel(self)
-        self.label_nrms.setText("NRMS:")
-        self.label_nrms.resize(275,25)
-        self.label_nrms.move(170, topvpos+11*vdel-4)        
-        self.text_nrms = QtWidgets.QTextEdit(self)
-        self.text_nrms.resize(50,29)
-        self.text_nrms.move(170, topvpos+int(11.5*vdel)+4)
-        txtnrms = str(NRMS)      
-        self.text_nrms.setText(txtnrms)
-        self.NRMSBtn = QtWidgets.QPushButton('Change', self)
-        self.NRMSBtn.resize(75,32)
-        self.NRMSBtn.move(230, topvpos+int(11.5*vdel)+3)        
-        # Add NRMSBtn call back
-        self.NRMSBtn.clicked.connect(self.change_nrms)
-        self.NRMSBtn.setToolTip("Change the number of RMS multiples for ellipses")  
-
-#       create "Open User Guides (pdf) with" options box (box 4)
-        self.OptBox4 = QGroupBox(self)
-        self.OptBox4.setGeometry(QtCore.QRect(10, topvpos+13*vdel, 220, 50))
-        self.OptBox4.setTitle("Open User Guides (pdf) with")
-        # Add L radio button (coordinates within groupBox)
-        self.Optradio3 = QRadioButton(self.OptBox4)
-        self.Optradio3.setGeometry(QtCore.QRect(10, 20, 80, 25))
-        self.Optradio3.setText("Adobe")
-        # Add R radio button (coordinates within groupBox)
-        self.Optradio4 = QRadioButton(self.OptBox4)
-        self.Optradio4.setGeometry(QtCore.QRect(80, 20, 90, 25))
-        self.Optradio4.setText("Evince")
-         # Add R radio button (coordinates within groupBox)
-        self.Optradio5 = QRadioButton(self.OptBox4)
-        self.Optradio5.setGeometry(QtCore.QRect(150, 20, 90, 25))
-        self.Optradio5.setText("xrd")
-#        print("button acr, evi, xrd ",acr_selected,evi_selected,xrd_selected)
-        if acr_selected == True :
-            self.Optradio3.setChecked(True)
-        if evi_selected == True :
-            self.Optradio4.setChecked(True)
-        if xrd_selected == True :
-            self.Optradio5.setChecked(True)
-        # Add radio button 1 call back
-        self.Optradio3.clicked.connect(self.get_or3)
-        self.Optradio3.setToolTip('If selected, Acrobat reader will be used for opening User Guides')  
-        # Add radio button 2 call back
-        self.Optradio4.clicked.connect(self.get_or4)
-        self.Optradio4.setToolTip('If selected, Evince will be used for opening User Guides. Only works on linux')
-        # Add radio button 3 call back
-        self.Optradio5.clicked.connect(self.get_or5)
-        self.Optradio5.setToolTip('If selected, xreader will be used for opening User Guides. Only works on linux')
-          
-# Display graph limits, read from dpu.ini  options box
-        self.label_xmin = QtWidgets.QLabel(self)
-        self.label_xmin.setText("Xmin:")
-        self.label_xmin.resize(275,25)
-        self.label_xmin.move(10, topvpos+15*vdel-4)        
-        self.text_xmin = QtWidgets.QTextEdit(self)
-        self.text_xmin.resize(50,29)
-        self.text_xmin.move(10, topvpos+int(15.5*vdel)+4)
-        txtminmax = str(xvals[0])      
-        self.text_xmin.setText(txtminmax)
-        self.label_xmax = QtWidgets.QLabel(self)
-        self.label_xmax.setText("Xmax:")
-        self.label_xmax.resize(275,25)
-        self.label_xmax.move(10, topvpos+17*vdel-4)        
-        self.text_xmax = QtWidgets.QTextEdit(self)
-        self.text_xmax.resize(50,29)
-        self.text_xmax.move(10, topvpos+int(17.5*vdel)+4)
-        txtminmax = str(xvals[1])
-        self.text_xmax.setText(txtminmax)
-        #              
-        self.label_xpmin = QtWidgets.QLabel(self)
-        self.label_xpmin.setText("XPmin:")
-        self.label_xpmin.resize(275,25)
-        self.label_xpmin.move(85, topvpos+15*vdel-4)        
-        self.text_xpmin = QtWidgets.QTextEdit(self)
-        self.text_xpmin.resize(50,29)
-        self.text_xpmin.move(85, topvpos+int(15.5*vdel)+4)
-        txtminmax = str(xpvals[0])      
-        self.text_xpmin.setText(txtminmax)
-        self.label_xpmax = QtWidgets.QLabel(self)
-        self.label_xpmax.setText("XPmax:")
-        self.label_xpmax.resize(275,25)
-        self.label_xpmax.move(85, topvpos+17*vdel-4)        
-        self.text_xpmax = QtWidgets.QTextEdit(self)
-        self.text_xpmax.resize(50,29)
-        self.text_xpmax.move(85, topvpos+int(17.5*vdel)+4)
-        txtminmax = str(xpvals[1])
-        self.text_xpmax.setText(txtminmax)
-        #              
-        self.label_ymin = QtWidgets.QLabel(self)
-        self.label_ymin.setText("Ymin:")
-        self.label_ymin.resize(275,25)
-        self.label_ymin.move(160, topvpos+15*vdel-4)        
-        self.text_ymin = QtWidgets.QTextEdit(self)
-        self.text_ymin.resize(50,29)
-        self.text_ymin.move(160, topvpos+int(15.5*vdel)+4)
-        txtminmax = str(yvals[0])      
-        self.text_ymin.setText(txtminmax)
-        self.label_ymax = QtWidgets.QLabel(self)
-        self.label_ymax.setText("Ymax:")
-        self.label_ymax.resize(275,25)
-        self.label_ymax.move(160, topvpos+17*vdel-4)        
-        self.text_ymax = QtWidgets.QTextEdit(self)
-        self.text_ymax.resize(50,29)
-        self.text_ymax.move(160, topvpos+int(17.5*vdel)+4)
-        txtminmax = str(yvals[1])      
-        self.text_ymax.setText(txtminmax)
-        #              
-        self.label_ypmin = QtWidgets.QLabel(self)
-        self.label_ypmin.setText("YPmin:")
-        self.label_ypmin.resize(275,25)
-        self.label_ypmin.move(235, topvpos+15*vdel-4)        
-        self.text_ypmin = QtWidgets.QTextEdit(self)
-        self.text_ypmin.resize(50,29)
-        self.text_ypmin.move(235, topvpos+int(15.5*vdel)+4)
-        txtminmax = str(ypvals[0])      
-        self.text_ypmin.setText(txtminmax)
-        self.label_ypmax = QtWidgets.QLabel(self)
-        self.label_ypmax.setText("YPmax:")
-        self.label_ypmax.resize(275,25)
-        self.label_ypmax.move(235, topvpos+17*vdel-4)        
-        self.text_ypmax = QtWidgets.QTextEdit(self)
-        self.text_ypmax.resize(50,29)
-        self.text_ypmax.move(235, topvpos+int(17.5*vdel)+4)
-        txtminmax = str(ypvals[1])      
-        self.text_ypmax.setText(txtminmax)
-        #
-        self.label_zmin = QtWidgets.QLabel(self)
-        self.label_zmin.setText("Zmin:")
-        self.label_zmin.resize(275,25)
-        self.label_zmin.move(310, topvpos+15*vdel-4)        
-        self.text_zmin = QtWidgets.QTextEdit(self)
-        self.text_zmin.resize(50,29)
-        self.text_zmin.move(310, topvpos+int(15.5*vdel)+4)
-        txtminmax = str(zvals[0])      
-        self.text_zmin.setText(txtminmax)
-        self.label_zmax = QtWidgets.QLabel(self)
-        self.label_zmax.setText("Zmax:")
-        self.label_zmax.resize(275,25)
-        self.label_zmax.move(310, topvpos+17*vdel-4)        
-        self.text_zmax = QtWidgets.QTextEdit(self)
-        self.text_zmax.resize(50,29)
-        self.text_zmax.move(310, topvpos+int(17.5*vdel)+4)
-        txtminmax = str(zvals[1])      
-        self.text_zmax.setText(txtminmax)
-        #
-        self.label_zpmin = QtWidgets.QLabel(self)
-        self.label_zpmin.setText("ZPmin:")
-        self.label_zpmin.resize(275,25)
-        self.label_zpmin.move(385, topvpos+15*vdel-4)        
-        self.text_zpmin = QtWidgets.QTextEdit(self)
-        self.text_zpmin.resize(50,29)
-        self.text_zpmin.move(385, topvpos+int(15.5*vdel)+4)
-        txtminmax = str(zpvals[0])      
-        self.text_zpmin.setText(txtminmax)
-        self.label_zpmax = QtWidgets.QLabel(self)
-        self.label_zpmax.setText("ZPmax:")
-        self.label_zpmax.resize(275,25)
-        self.label_zpmax.move(385, topvpos+17*vdel-4)        
-        self.text_zpmax = QtWidgets.QTextEdit(self)
-        self.text_zpmax.resize(50,29)
-        self.text_zpmax.move(385, topvpos+int(17.5*vdel)+4)
-        txtminmax = str(zpvals[1])      
-        self.text_zpmax.setText(txtminmax)
-        
-        self.ChangeLimitsBtn = QtWidgets.QPushButton('Update graph limits', self)
-        self.ChangeLimitsBtn.resize(425,32)
-        self.ChangeLimitsBtn.move(10, topvpos+int(18.9*vdel))        
-        # Add ChangeLimitsBtn call back
-        self.ChangeLimitsBtn.clicked.connect(self.change_limits)
-        self.ChangeLimitsBtn.setToolTip("Change the graph limits")  
-
-#       create "Emittance values" option box 
-        self.OptBox20 = QGroupBox(self)
-        self.OptBox20.setGeometry(QtCore.QRect(235, topvpos+13*vdel, 220, 50))
-        self.OptBox20.setTitle("Emittance values")
-        # Add Display check box (coordinates within groupBox)        
-        self.checkBox20 = QCheckBox(self.OptBox20)
-        self.checkBox20.setGeometry(QtCore.QRect(10, 22, 70, 25))
-        self.checkBox20.setText("Display") 
-        self.checkBox20.clicked.connect(self.set_dev)
-        self.checkBox20.setToolTip('If selected, displays RMS emittances on top 3 distribution plots')  
-        # Add "at the bottom" check box (location of emittance values in plot)        
-        self.checkBox21 = QCheckBox(self.OptBox20)
-        self.checkBox21.setGeometry(QtCore.QRect(85, 22, 110, 25))
-        self.checkBox21.setText("at the bottom") 
-        self.checkBox21.clicked.connect(self.set_emi_pos)
-        self.checkBox21.setToolTip('If selected, changes location of the display values to the bottom of the plots')  
+            self.tab2.staticPlt.move(225,topvpos+ 16*vdel +14)
+            self.tab2.staticPlt.resize(200,55)
+        self.tab2.staticPlt.setToolTip('This is the colormap used for density plots')  
         
 # Display amu, optionally read from dgui.ini 
         boxesvoff = -15
-        self.label1_amu = QtWidgets.QLabel(self)
-        self.label1_amu.setText("Particle mass (AMU):") 
-        self.label1_amu.resize(285,30)
-        self.label1_amu.move(10, topvpos+int(20.*vdel))        
-        self.text_amu = QtWidgets.QTextEdit(self)
-        self.text_amu.resize(50,26)
-        self.text_amu.move(10, topvpos+int(21.5*vdel) + boxesvoff)
+        self.tab2.label1_amu = QtWidgets.QLabel(self.tab2)
+        self.tab2.label1_amu.setText("Particle mass (AMU):") 
+        self.tab2.label1_amu.resize(285,30)
+        self.tab2.label1_amu.move(5, topvpos+int(18.*vdel))        
+        self.tab2.text_amu = QtWidgets.QTextEdit(self.tab2)
+        self.tab2.text_amu.resize(50,26)
+        self.tab2.text_amu.move(5, topvpos+int(19.5*vdel) + boxesvoff)
+        self.tab2.text_amu.setStyleSheet("background-color : white;" "border: 1px solid black;")         
         txtmass = str(amu)      
-        self.text_amu.setText(txtmass)
-        self.AMUBtn = QtWidgets.QPushButton('Change', self)
-        self.AMUBtn.resize(75,32)
-        self.AMUBtn.move(65, topvpos+int(21.5*vdel) + boxesvoff - 4)        
+        self.tab2.text_amu.setText(txtmass)
+        self.tab2.AMUBtn = QtWidgets.QPushButton('Change', self.tab2)
+        self.tab2.AMUBtn.resize(75,32)
+        self.tab2.AMUBtn.move(65, topvpos+int(19.5*vdel) + boxesvoff - 4)        
         # Add AMUBtn call back
-        self.AMUBtn.clicked.connect(self.change_amu)
-        self.AMUBtn.setToolTip("Change the particle mass") 
-
-#       create "Save graphs as:" options box (box 23)
-        self.OptBox23 = QGroupBox(self)
-        self.OptBox23.setGeometry(QtCore.QRect(235, topvpos+20*vdel+6, 200, 50))
-        self.OptBox23.setTitle("Save graphs as:")
-        # Add L radio button (coordinates within groupBox)
-        self.OptPlotit1 = QRadioButton(self.OptBox23)
-        self.OptPlotit1.setGeometry(QtCore.QRect(10, 20, 100, 25))
-        self.OptPlotit1.setText("png")
-        self.OptPlotit1.setChecked(True)
-        # Add M radio button (coordinates within groupBox)
-        self.OptPlotit2 = QRadioButton(self.OptBox23)
-        self.OptPlotit2.setGeometry(QtCore.QRect(65, 20, 50, 25))
-        self.OptPlotit2.setText("jpeg")
-#        # Add R radio button (coordinates within groupBox) GIF not generally supported on all platforms by QT
-#        bmp and tiff supported by QT, but not out of the box with gnuplot (unless initially requested 
-#        at installation time (?))
-#        self.OptPlotit3 = QRadioButton(self.OptBox23)
-#        self.OptPlotit3.setGeometry(QtCore.QRect(120, 20, 60, 25))
-#        self.OptPlotit3.setText("gif")
-        # Add Plotit radio button 1 call back
-        self.OptPlotit1.clicked.connect(self.get_Plot1)
-        self.OptPlotit1.setToolTip('Store graphs as png files')  
-        # Add Plotit radio button 2 call back
-        self.OptPlotit2.clicked.connect(self.get_Plot2)
-        self.OptPlotit2.setToolTip('Store graphs as jpeg files')  
-#        # Add Plotit radio button 3 call back GIF not generally supported on all platforms by QT
-#        self.OptPlotit3.clicked.connect(self.get_Plot3)
-#        self.OptPlotit3.setToolTip('Store plotit graphs as gif files')  
+        self.tab2.AMUBtn.clicked.connect(self.change_amu)
+        self.tab2.AMUBtn.setToolTip("Change the particle mass")       
         
-        
-# Display Energy, optionally read from dgui.ini
-#        self.label1_energy = QtWidgets.QLabel(self)
-#        self.label1_energy.setText("Beam energy (MeV/u):")
-#        self.label1_energy.resize(285,25)
-#        self.label1_energy.move(300, topvpos+int(20.*vdel))        
-#        self.text_energy = QtWidgets.QTextEdit(self)
-#        self.text_energy.resize(50,26)
-#        self.text_energy.move(300, topvpos+int(21.5*vdel) + boxesvoff)
-#        txtener = str(ener)      
-#        self.text_energy.setText(txtener)
-#        self.EnergyBtn = QtWidgets.QPushButton('Change', self)
-#        self.EnergyBtn.resize(75,32)
-#        self.EnergyBtn.move(355, int(topvpos+21.5*vdel) + boxesvoff - 4)        
-#        # Add EnergyBtn call back
-#        self.EnergyBtn.clicked.connect(self.change_energy)
-#        self.EnergyBtn.setToolTip("Change the beam energy")  
+        # Add tabs to widget
+        self.layout.addWidget(self.tabs)
+        self.setLayout(self.layout)
 
-        
-    def set_dev(self):
-        global emivals_selected
-        '''Display emittance values'''               
-        if(self.checkBox20.isChecked() == True ):
-            emivals_selected = True 
-        else:      
-            emivals_selected = False         
+    def get_active_tab(self, tabIndex):
+        global current_tab
+        current_tab = tabIndex
+        #print('DBX the current tab index is ',current_tab)       
 
-    def set_emi_pos(self):
-        global emivals_bottom
-        '''Position of emittance values'''               
-        if(self.checkBox21.isChecked() == True ):
-            emivals_bottom = True 
-        else:      
-            emivals_bottom = False         
-
-    def change_amu(self):
-        global amu
-        '''Change the mass (AMU)'''               
-        amutxt = self.text_amu.toPlainText()
-        amu = float(amutxt)
+    def change_bin(self):                            #
+        global dynacv
+        '''Change the dynac executable'''            #
+        dynacv = self.tab1.text_binary.toPlainText()
         mytext = ""
-        mytext = "Particle mass changed to " + amutxt + "\n"
-        mycursor=self.mymain.inpLog.textCursor()
+        mytext = "DYNAC executable changed to " + dynacv + "\n"
+        mycursor = self.mymain.inpLog.textCursor()
         self.mymain.inpLog.setTextCursor(mycursor)
         mycursor.insertText(mytext) 
         
-#    def change_energy(self):
-#        global ener
-#        '''Change the beam energy (MeV/u)'''               
-#        enertxt = self.text_energy.toPlainText()
-#        ener = float(enertxt)
-#        print("Beam energy changed to ",ener," MeV/u")                        
-
-    def cm_choice(self,textnum):
-        global colormap_name, topvpos, vdel, lut 
-        self.staticPlt.close()
-        # color maps numbered from 1..15, but standard button starts from 0
-        textnum = textnum + 1
-        
-        text = self.comboItems[textnum]
-        if(text == "jet_white"):
-            colormap_name = "jet"
-        else:
-            colormap_name = text                
-# Get the LUT corresponding to the selected colormap
-        cm_lut(colormap_name,0)
-        if(text == "jet_white"):
-            colormap_name = "jet_white"    
-        self.staticPlt = pg.PlotWidget(self)
-        self.staticPlt.setBackground((252,252,245, 255))
-        xmin=0.
-        xmax=99.
-        ymin=0.
-        ymax=0.2
-        x = np.empty((256, 2)) 
-        y = np.empty((256, 2)) 
-        indx=0
-        lut[indx,0]=255.
-        lut[indx,1]=255.
-        lut[indx,2]=255.
-        while indx < 100:
-            indice = int(indx * 255. / 99.)
-            x[indx,0]= indx
-            x[indx,1]= indx
-            y[indx,0]=ymin
-            y[indx,1]=ymax
-            self.staticPlt.plot(x[indx,],y[indx,], pen=QPen(QColor(int(lut[indice,0]), int(lut[indice,1]), int(lut[indice,2]))))
-            indx=indx + 1
-        self.staticPlt.showAxis('left', show=False)
-        self.staticPlt.move(235,topvpos+4*vdel)
-        self.staticPlt.resize(210,55)
-        if (platform.system() == 'Windows') :
-            self.staticPlt.move(235,topvpos+4*vdel+24)
-            self.staticPlt.resize(210,55)
-        if (platform.system() == 'Linux') :
-            self.staticPlt.move(235,topvpos+4*vdel+24)
-            self.staticPlt.resize(200,55)
-        if (platform.system() == 'Darwin') :  
-            self.staticPlt.move(235,topvpos+4*vdel+24)
-            self.staticPlt.resize(200,55)
-        self.staticPlt.setToolTip('This is the colormap used for density plots')  
-        self.staticPlt.show()
-        mytext=""        
-        mytext="Colormap "  + colormap_name + " selected\n"      
+    def change_bpath(self):                            #
+        global dynpath
+        '''Change the path to the dynac executable'''            #
+        dynpath = self.tab1.text_bpath.toPlainText()
+        mytext = ""
+        mytext = "Path to DYNAC executable changed to " + dynpath + "\n"
         mycursor=self.mymain.inpLog.textCursor()
         self.mymain.inpLog.setTextCursor(mycursor)
-        mycursor.insertText(mytext) 
-                      
-    def get_or1(self):
-        global inter_selected, KDE_selected
-        inter_selected = True
-        KDE_selected = False
-
-    def get_or2(self):
-        global inter_selected, KDE_selected
-        inter_selected = False
-        KDE_selected = True
+        mycursor.insertText(mytext)
 
     def get_or3(self):
         global acr_selected, evi_selected, xrd_selected
@@ -1459,41 +1488,24 @@ class OptionsLayout(QWidget):
         evi_selected = False
         xrd_selected = True
 
-    def get_rOptABS(self):
-        global ABS_selected, COG_selected
-        ABS_selected = True
-        COG_selected = False
+    def get_cb6(self):
+        global pro_raw
+        if (self.tab2.checkBox6.isChecked() != 0 ):   
+            pro_raw = True
+#            print('CB6 Selected')
+        else:    
+            pro_raw = False
+#            print('CB6 Not Selected')
 
-    def get_rOptCOG(self):
-        global ABS_selected, COG_selected
-        COG_selected = True
-        ABS_selected = False
-        
-    def get_orKDE1(self):
-        global n_of_KDE_bins
-        n_of_KDE_bins=50
+    def get_cb7(self):
+        global pro_fit
+        if (self.tab2.checkBox7.isChecked() != 0 ):   
+            pro_fit = True
+#            print('CB7 Selected')
+        else:    
+            pro_fit = False
+#            print('CB7 Not Selected')
 
-    def get_orKDE2(self):
-        global n_of_KDE_bins
-        n_of_KDE_bins=75
-
-    def get_orKDE3(self):
-        global n_of_KDE_bins
-        n_of_KDE_bins=100
-
-    def get_Plot1(self):
-        global gr_file_ext
-        gr_file_ext="png"
-
-    def get_Plot2(self):
-        global gr_file_ext
-        gr_file_ext="jpeg"
-
-    def get_Plot3(self):
-        global gr_file_ext
-        gr_file_ext="gif"
-        
-        
     def get_orAF1(self):
         global fit_amp
         fit_amp=16./1.        
@@ -1510,82 +1522,106 @@ class OptionsLayout(QWidget):
         global fit_amp
         fit_amp=16./4.      
 
-    def changeSV1(self, value):
-        global SV1
-        self.OptSL1c.setText(str(value))
-        SV1=value        
+    def get_cb12(self):
+        global plot_ellipse
+        if(self.tab2.checkBox12.isChecked() != 0 ):   
+            plot_ellipse = True
+        else:    
+            plot_ellipse = False
 
     def change_nrms(self):
         global NRMS
         '''Change the number of RMS multiples'''               
-        nrmstxt = self.text_nrms.toPlainText()
+        nrmstxt = self.tab2.text_nrms.toPlainText()
         NRMS = float(nrmstxt)
         mytxt = ""
         mytext = "Number of RMS multiples changed to " + nrmstxt + "\n"
         mycursor=self.mymain.inpLog.textCursor()
         self.mymain.inpLog.setTextCursor(mycursor)
         mycursor.insertText(mytext) 
-
-    def change_limits(self):
-        global xvals,xpvals,yvals,ypvals,zvals,zpvals
-        '''Change the graph limits'''               
-        limtxt = self.text_xmin.toPlainText()
-        xvals[0] = float(limtxt)
-        limtxt = self.text_xmax.toPlainText()
-        xvals[1] = float(limtxt)
-        limtxt = self.text_xpmin.toPlainText()
-        xpvals[0] = float(limtxt)
-        limtxt = self.text_xpmax.toPlainText()
-        xpvals[1] = float(limtxt)
-        #
-        limtxt = self.text_ymin.toPlainText()
-        yvals[0] = float(limtxt)
-        limtxt = self.text_ymax.toPlainText()
-        yvals[1] = float(limtxt)
-        limtxt = self.text_ypmin.toPlainText()
-        ypvals[0] = float(limtxt)
-        limtxt = self.text_ypmax.toPlainText()
-        ypvals[1] = float(limtxt)
-        #
-        limtxt = self.text_zmin.toPlainText()
-        zvals[0] = float(limtxt)
-        limtxt = self.text_zmax.toPlainText()
-        zvals[1] = float(limtxt)
-        limtxt = self.text_zpmin.toPlainText()
-        zpvals[0] = float(limtxt)
-        limtxt = self.text_zpmax.toPlainText()
-        zpvals[1] = float(limtxt)
-        mytext = ""
-        mytext = "Graph limits updated\n"
+        
+    def cm_choice(self,textnum):
+        global colormap_name, topvpos, vdel, lut 
+        self.tab2.staticPlt.close()
+        # color maps numbered from 1..15, but standard button starts from 0
+        textnum = textnum + 1
+        
+        text = self.tab2.comboItems[textnum]
+        if(text == "jet_white"):
+            colormap_name = "jet"
+        else:
+            colormap_name = text                
+# Get the LUT corresponding to the selected colormap
+        cm_lut(colormap_name,0)
+        if(text == "jet_white"):
+            colormap_name = "jet_white"    
+        self.tab2.staticPlt = pg.PlotWidget(self.tab2)
+        self.tab2.staticPlt.setBackground((252,252,245, 255))
+        xmin=0.
+        xmax=99.
+        ymin=0.
+        ymax=0.2
+        x = np.empty((256, 2)) 
+        y = np.empty((256, 2)) 
+        indx=0
+        lut[indx,0]=255.
+        lut[indx,1]=255.
+        lut[indx,2]=255.
+        while indx < 100:
+            indice = int(indx * 255. / 99.)
+            x[indx,0]= indx
+            x[indx,1]= indx
+            y[indx,0]=ymin
+            y[indx,1]=ymax
+            self.tab2.staticPlt.plot(x[indx,],y[indx,], pen=QPen(QColor(int(lut[indice,0]), int(lut[indice,1]), int(lut[indice,2]))))
+            indx=indx + 1
+        self.tab2.staticPlt.showAxis('left', show=False)
+        self.tab2.staticPlt.move(235, topvpos + 15*vdel)
+        self.tab2.staticPlt.resize(210,55)
+        if (platform.system() == 'Windows') :
+            self.tab2.staticPlt.move(218,topvpos+ 16*vdel +14)
+            self.tab2.staticPlt.resize(210,55)
+        if (platform.system() == 'Linux') :
+            self.tab2.staticPlt.move(225,topvpos+ 16*vdel +14)
+            self.tab2.staticPlt.resize(200,55)
+        if (platform.system() == 'Darwin') :  
+            self.tab2.staticPlt.move(225,topvpos+ 16*vdel +14)
+            self.tab2.staticPlt.resize(200,55)
+        self.tab2.staticPlt.setToolTip('This is the colormap used for density plots')  
+        self.tab2.staticPlt.show()
+        mytext=""        
+        mytext="Colormap "  + colormap_name + " selected\n"      
         mycursor=self.mymain.inpLog.textCursor()
         self.mymain.inpLog.setTextCursor(mycursor)
         mycursor.insertText(mytext) 
-                
-    def get_cb6(self):
-        global pro_raw
-        if (self.checkBox6.isChecked() != 0 ):   
-            pro_raw = True
-#            print('CB6 Selected')
-        else:    
-            pro_raw = False
-#            print('CB6 Not Selected')
 
-    def get_cb7(self):
-        global pro_fit
-        if (self.checkBox7.isChecked() != 0 ):   
-            pro_fit = True
-#            print('CB7 Selected')
-        else:    
-            pro_fit = False
-#            print('CB7 Not Selected')
+    def changeSV1(self, value):
+        global SV1
+        self.tab2.OptSL1c.setText(str(value))
+        SV1=value        
 
-    def get_cb12(self):
-        global plot_ellipse
-        if(self.checkBox12.isChecked() != 0 ):   
-            plot_ellipse = True
-        else:    
-            plot_ellipse = False
+    def get_or1(self):
+        global inter_selected, KDE_selected
+        inter_selected = True
+        KDE_selected = False
 
+    def get_or2(self):
+        global inter_selected, KDE_selected
+        inter_selected = False
+        KDE_selected = True
+
+    def get_orKDE1(self):
+        global n_of_KDE_bins
+        n_of_KDE_bins=50
+
+    def get_orKDE2(self):
+        global n_of_KDE_bins
+        n_of_KDE_bins=75
+
+    def get_orKDE3(self):
+        global n_of_KDE_bins
+        n_of_KDE_bins=100
+        
     def get_orGL1(self):
         global GRS
         GRS="Auto"
@@ -1593,18 +1629,91 @@ class OptionsLayout(QWidget):
     def get_orGL2(self):
         global GRS
         GRS="File"
+        
+    def get_rOptABS(self):
+        global ABS_selected, COG_selected
+        ABS_selected = True
+        COG_selected = False
 
-    def change_bin(self):                            #
-        global dynacv
-        '''Change the dynac executable'''            #
-        dynacv = self.text_binary.toPlainText()
+    def get_rOptCOG(self):
+        global ABS_selected, COG_selected
+        COG_selected = True
+        ABS_selected = False
+        
+    def change_limits(self):
+        global xvals,xpvals,yvals,ypvals,zvals,zpvals
+        '''Change the graph limits'''               
+        limtxt = self.tab2.text_xmin.toPlainText()
+        xvals[0] = float(limtxt)
+        limtxt = self.tab2.text_xmax.toPlainText()
+        xvals[1] = float(limtxt)
+        limtxt = self.tab2.text_xpmin.toPlainText()
+        xpvals[0] = float(limtxt)
+        limtxt = self.tab2.text_xpmax.toPlainText()
+        xpvals[1] = float(limtxt)
+        #
+        limtxt = self.tab2.text_ymin.toPlainText()
+        yvals[0] = float(limtxt)
+        limtxt = self.tab2.text_ymax.toPlainText()
+        yvals[1] = float(limtxt)
+        limtxt = self.tab2.text_ypmin.toPlainText()
+        ypvals[0] = float(limtxt)
+        limtxt = self.tab2.text_ypmax.toPlainText()
+        ypvals[1] = float(limtxt)
+        #
+        limtxt = self.tab2.text_zmin.toPlainText()
+        zvals[0] = float(limtxt)
+        limtxt = self.tab2.text_zmax.toPlainText()
+        zvals[1] = float(limtxt)
+        limtxt = self.tab2.text_zpmin.toPlainText()
+        zpvals[0] = float(limtxt)
+        limtxt = self.tab2.text_zpmax.toPlainText()
+        zpvals[1] = float(limtxt)
         mytext = ""
-        mytext = "DYNAC executable changed to " + dynacv + "\n"
+        mytext = "Graph limits updated\n"
         mycursor=self.mymain.inpLog.textCursor()
         self.mymain.inpLog.setTextCursor(mycursor)
         mycursor.insertText(mytext) 
+        
+    def get_Plot1(self):
+        global gr_file_ext
+        gr_file_ext="png"
 
+    def get_Plot2(self):
+        global gr_file_ext
+        gr_file_ext="jpeg"
 
+    def get_Plot3(self):
+        global gr_file_ext
+        gr_file_ext="gif"        
+        
+    def set_dev(self):
+        global emivals_selected
+        '''Display emittance values'''               
+        if(self.tab2.checkBox20.isChecked() == True ):
+            emivals_selected = True 
+        else:      
+            emivals_selected = False         
+
+    def set_emi_pos(self):
+        global emivals_bottom
+        '''Position of emittance values'''               
+        if(self.tab2.checkBox21.isChecked() == True ):
+            emivals_bottom = True 
+        else:      
+            emivals_bottom = False         
+
+    def change_amu(self):
+        global amu
+        '''Change the mass (AMU)'''               
+        amutxt = self.tab2.text_amu.toPlainText()
+        amu = float(amutxt)
+        mytext = ""
+        mytext = "Particle mass changed to " + amutxt + "\n"
+        mycursor=self.mymain.inpLog.textCursor()
+        self.mymain.inpLog.setTextCursor(mycursor)
+        mycursor.insertText(mytext) 
+                
 ######################################################
 # OPTIONS class                                      #
 ######################################################
@@ -1613,12 +1722,15 @@ class Options(QMainWindow):
     def __init__(self, MainWindow, parent=None):
         super().__init__(parent)
 #        self.mymain = MainWindow
+        #print("DBX class OPTIONS ",self.mymain)
 ## Create a ParameterTree like widget
-        self.setMinimumSize(QSize(455, 700))    
-        self.setMaximumSize(QSize(455, 700))    
-#        self.setMaximumSize(QSize(625, 875))    
-        self.setWindowTitle("DYNAC GUI OPTIONS") 
 
+#        self.setMinimumSize(QSize(455, 700))    
+#        self.setMaximumSize(QSize(455, 700))
+        self.setMinimumSize(QSize(ow_sz_x, ow_sz_y))    
+        self.setMaximumSize(QSize(ow_sz_x, ow_sz_y))        
+        self.setWindowTitle("DYNAC GUI OPTIONS") 
+        self.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))
         # Set window background color
         self.setAutoFillBackground(True)
         p = self.palette()
@@ -1626,27 +1738,29 @@ class Options(QMainWindow):
         p.setColor(self.backgroundRole(), QColor(176,224,230))
         self.setPalette(p)
 
-        self.main_widget = OptionsLayout(MainWindow, parent=self)
-        self.setCentralWidget(self.main_widget)
+        #self.main_widget = OptionsLayout(MainWindow, parent=self)
+        #self.setCentralWidget(self.main_widget)
+# 2025TABS
+        self.table_widget = MyTableWidget(MainWindow, parent=self)
+        self.setCentralWidget(self.table_widget)        
         # filling up a menu bar
         bar = self.menuBar()
         # File menu
         file_menu = bar.addMenu('File')
-        # adding actions to file menu
-        open_action = QtWidgets.QAction('Open', self)
-        close_action = QtWidgets.QAction('Close', self)
+        # adding actions to file menu     
+        open_action = QAction('Open', self)
+        close_action = QAction('Close', self)
         file_menu.addAction(open_action)
         file_menu.addAction(close_action)
         # Edit menu
         edit_menu = bar.addMenu('Edit')
         # adding actions to edit menu
-        undo_action = QtWidgets.QAction('Undo', self)
-        redo_action = QtWidgets.QAction('Redo', self)
+        undo_action = QAction('Undo', self)
+        redo_action = QAction('Redo', self)
         edit_menu.addAction(undo_action)
         edit_menu.addAction(redo_action)
         # use `connect` method to bind signals to desired behavior
         close_action.triggered.connect(self.close)
-
 
 ######################################################
 # MAINWINDOW class                                   #
@@ -1655,9 +1769,17 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         # creating widget and setting it as central
-        self.setMinimumSize(QSize(1250, 700))    
-#        self.setMaximumSize(QSize(1500, 840))    
-        self.setMaximumSize(QSize(1250, 700))    
+        if (DBX == True):        
+            screenChanged = QtCore.pyqtSignal(QtGui.QScreen, QtGui.QScreen)    
+            myapp = QApplication.instance()
+            screen = myapp.primaryScreen()
+            geometry = screen.availableGeometry()
+            print("DBX screen geometry=",geometry)         
+            #self.setFixedSize(int(geometry.width() * 0.651), int(geometry.height() * 0.680)) 
+#        self.setMinimumSize(QSize(1250, 700))                                                      
+#        self.setMaximumSize(QSize(1250, 700))
+        self.setMinimumSize(QSize(mw_sz_x, mw_sz_y))                                                      
+        self.setMaximumSize(QSize(mw_sz_x, mw_sz_x))
         self.setWindowTitle(dgui_v) 
 
         self.dynugpdf = None
@@ -1676,16 +1798,18 @@ class MainWindow(QMainWindow):
         # filling up a menu bar
         bar = self.menuBar()
         bar.setNativeMenuBar(False) # Disables the global menu bar on MacOS
+        #bar.setStyleSheet("color: black;" "border: 1px solid black;" "background:rgb(176,224,230);")        
+        bar.setStyleSheet("color: black;" "background:rgb(176,224,230);")        
         
         # File menu
         file_menu = bar.addMenu('File')
         # adding actions to file menu
-        openif_action = QtWidgets.QAction('Open input file', self, triggered=self.main_widget.get_inp)
-        opendf_action = QtWidgets.QAction('Open dist. file', self, triggered=self.main_widget.get_dst)
-        setpfd_action = QtWidgets.QAction('Set project files directory', self, triggered=self.main_widget.set_pfd)
-        savef_action  = QtWidgets.QAction('Save project file(s)', self, triggered=self.main_widget.save_files)
-        close_action  = QtWidgets.QAction('Close DGUI', self)
-        close_all     = QtWidgets.QAction('Close all windows',    self)
+        openif_action = QAction('Open input file', self, triggered=self.main_widget.get_inp)
+        opendf_action = QAction('Open dist. file', self, triggered=self.main_widget.get_dst)
+        setpfd_action = QAction('Set project files directory', self, triggered=self.main_widget.set_pfd)
+        savef_action  = QAction('Save project file(s)', self, triggered=self.main_widget.save_files)
+        close_action  = QAction('Close DGUI', self)
+        close_all     = QAction('Close all windows',    self)
         file_menu.addAction(openif_action)
         file_menu.addAction(opendf_action)
         file_menu.addAction(setpfd_action)
@@ -1695,26 +1819,26 @@ class MainWindow(QMainWindow):
         # Edit menu
 #        edit_menu = bar.addMenu('Edit')
 #        # adding actions to edit menu
-#        undo_action = QtWidgets.QAction('Undo', self)
-#        redo_action = QtWidgets.QAction('Redo', self)
+#        undo_action = QAction('Undo', self)
+#        redo_action = QAction('Redo', self)
 #        edit_menu.addAction(undo_action)
 #        edit_menu.addAction(redo_action)
         # Options menu
         file_menu = bar.addMenu('Options')
         # adding actions to file menu
-        prscr_action = QtWidgets.QAction('Print Screen', self, shortcut="Ctrl+P",
+        prscr_action = QAction('Print Screen', self, shortcut="Ctrl+P",
                 statusTip="Print the full screen", triggered=self.printscr_)
         file_menu.addAction(prscr_action)
  
         # Help menu
         file_menu = bar.addMenu('Help')
         # adding actions to file menu
-        helpdy_action = QtWidgets.QAction('DYNAC help', self, 
+        helpdy_action = QAction('DYNAC help', self, 
                 statusTip="Help on DYNAC", triggered=self.help_dynac)
         helpdy_action.setShortcut( QKeySequence("Ctrl+M") )
         file_menu.addAction(helpdy_action)
         
-        helpdg_action = QtWidgets.QAction('DGUI help', self, 
+        helpdg_action = QAction('DGUI help', self, 
                 statusTip="Help on DGUI", triggered=self.help_dgui)
         helpdg_action.setShortcut( QKeySequence("Ctrl+G") )
         file_menu.addAction(helpdg_action)
@@ -1723,181 +1847,182 @@ class MainWindow(QMainWindow):
         pdf_document =  default_ugpath + os.sep + 'dynac_UG.pdf'
         get_tcd(pdf_document)        
         
-#        helptc1_action  = QtWidgets.QAction('Input Beam Type Codes', self) 
-#        helptc2_action  = QtWidgets.QAction('Optical Lenses Type Codes', self) 
-        helptc3_action  = QtWidgets.QAction('Accelerator, Buncher, E-gun, Stripper Type Codes', self) 
-        helptc4_action  = QtWidgets.QAction('Functioning Modes Type Codes', self)
-        helptc5_action  = QtWidgets.QAction('Beam Redefinition Type Codes', self)
-        helptc6_action  = QtWidgets.QAction('Tolerances and Errors Type Codes', self)
-        helptc7_action  = QtWidgets.QAction('Space Charge Type Codes', self)
-        helptc8_action  = QtWidgets.QAction('Output Print Type Codes', self)
-        helptc9_action  = QtWidgets.QAction('Output Plot Type Codes', self)
-#        helptc10_action = QtWidgets.QAction('Other Type Codes', self)
+#        helptc1_action  = QAction('Input Beam Type Codes', self) 
+#        helptc2_action  = QAction('Optical Lenses Type Codes', self) 
+        helptc3_action  = QAction('Accelerator, Buncher, E-gun, Stripper Type Codes', self) 
+        helptc4_action  = QAction('Functioning Modes Type Codes', self)
+        helptc5_action  = QAction('Beam Redefinition Type Codes', self)
+        helptc6_action  = QAction('Tolerances and Errors Type Codes', self)
+        helptc7_action  = QAction('Space Charge Type Codes', self)
+        helptc8_action  = QAction('Output Print Type Codes', self)
+        helptc9_action  = QAction('Output Plot Type Codes', self)
+#        helptc10_action = QAction('Other Type Codes', self)
 
         i = 0
         tct = 10
         file_submenu = file_menu.addMenu("Type Codes")
         file_tc1_submenu = file_submenu.addMenu("Input Beam Type Codes")
 
-        file_tc1_submenu.addAction(QtWidgets.QAction(TypeCodes[0][0].split(' ',1)[0], self, 
+        file_tc1_submenu.addAction(QAction(TypeCodes[0][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[0][0],TypeCodeText[0][0])))) 
-        file_tc1_submenu.addAction(QtWidgets.QAction(TypeCodes[0][1].split(' ',1)[0], self, 
+        file_tc1_submenu.addAction(QAction(TypeCodes[0][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[0][1],TypeCodeText[0][1])))) 
-        file_tc1_submenu.addAction(QtWidgets.QAction(TypeCodes[0][2].split(' ',1)[0], self, 
+        file_tc1_submenu.addAction(QAction(TypeCodes[0][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[0][2],TypeCodeText[0][2])))) 
-        file_tc1_submenu.addAction(QtWidgets.QAction(TypeCodes[0][3].split(' ',1)[0], self, 
+        file_tc1_submenu.addAction(QAction(TypeCodes[0][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[0][3],TypeCodeText[0][3]))))            
 
         file_tc2_submenu = file_submenu.addMenu("Optical Lenses Type Codes")
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][0].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][0],TypeCodeText[1][0])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][1].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][1],TypeCodeText[1][1])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][2].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][2],TypeCodeText[1][2])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][3].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][3],TypeCodeText[1][3]))))         
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][4].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][4].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][4],TypeCodeText[1][4])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][5].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][5].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][5],TypeCodeText[1][5])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][6].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][6].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][6],TypeCodeText[1][6])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][7].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][7].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][7],TypeCodeText[1][7]))))         
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][8].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][8].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][8],TypeCodeText[1][8])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][9].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][9].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][9],TypeCodeText[1][9])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][10].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][10].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][10],TypeCodeText[1][10])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][11].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][11].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][11],TypeCodeText[1][11]))))         
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][12].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][12].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][12],TypeCodeText[1][12])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][13].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][13].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][13],TypeCodeText[1][13])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][14].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][14].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][14],TypeCodeText[1][14])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][15].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][15].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][15],TypeCodeText[1][15]))))         
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][16].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][16].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][16],TypeCodeText[1][16])))) 
-        file_tc2_submenu.addAction(QtWidgets.QAction(TypeCodes[1][17].split(' ',1)[0], self, 
+        file_tc2_submenu.addAction(QAction(TypeCodes[1][17].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[1][17],TypeCodeText[1][17])))) 
                    
         file_tc3_submenu = file_submenu.addMenu("Accelerator, Buncher, E-gun, Stripper Type Codes")
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][0].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][0],TypeCodeText[2][0])))) 
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][1].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][1],TypeCodeText[2][1])))) 
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][2].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][2],TypeCodeText[2][2])))) 
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][3].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][3],TypeCodeText[2][3]))))         
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][4].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][4].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][4],TypeCodeText[2][4])))) 
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][5].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][5].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][5],TypeCodeText[2][5])))) 
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][6].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][6].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][6],TypeCodeText[2][6])))) 
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][7].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][7].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][7],TypeCodeText[2][7]))))         
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][8].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][8].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][8],TypeCodeText[2][8])))) 
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][9].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][9].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][9],TypeCodeText[2][9])))) 
-        file_tc3_submenu.addAction(QtWidgets.QAction(TypeCodes[2][10].split(' ',1)[0], self, 
+        file_tc3_submenu.addAction(QAction(TypeCodes[2][10].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[2][10],TypeCodeText[2][10]))))        
 
         file_tc4_submenu = file_submenu.addMenu("Functioning Modes Type Codes")
-        file_tc4_submenu.addAction(QtWidgets.QAction(TypeCodes[3][0].split(' ',1)[0], self, 
+        file_tc4_submenu.addAction(QAction(TypeCodes[3][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[3][0],TypeCodeText[3][0])))) 
-        file_tc4_submenu.addAction(QtWidgets.QAction(TypeCodes[3][1].split(' ',1)[0], self, 
+        file_tc4_submenu.addAction(QAction(TypeCodes[3][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[3][1],TypeCodeText[3][1])))) 
-        file_tc4_submenu.addAction(QtWidgets.QAction(TypeCodes[3][2].split(' ',1)[0], self, 
+        file_tc4_submenu.addAction(QAction(TypeCodes[3][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[3][2],TypeCodeText[3][2])))) 
-        file_tc4_submenu.addAction(QtWidgets.QAction(TypeCodes[3][3].split(' ',1)[0], self, 
+        file_tc4_submenu.addAction(QAction(TypeCodes[3][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[3][3],TypeCodeText[3][3])))) 
                   
         file_tc5_submenu = file_submenu.addMenu("Beam Redefinition Type Codes")
-        file_tc5_submenu.addAction(QtWidgets.QAction(TypeCodes[4][0].split(' ',1)[0], self, 
+        file_tc5_submenu.addAction(QAction(TypeCodes[4][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[4][0],TypeCodeText[4][0])))) 
-        file_tc5_submenu.addAction(QtWidgets.QAction(TypeCodes[4][1].split(' ',1)[0], self, 
+        file_tc5_submenu.addAction(QAction(TypeCodes[4][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[4][1],TypeCodeText[4][1])))) 
-        file_tc5_submenu.addAction(QtWidgets.QAction(TypeCodes[4][2].split(' ',1)[0], self, 
+        file_tc5_submenu.addAction(QAction(TypeCodes[4][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[4][2],TypeCodeText[4][2])))) 
-        file_tc5_submenu.addAction(QtWidgets.QAction(TypeCodes[4][3].split(' ',1)[0], self, 
+        file_tc5_submenu.addAction(QAction(TypeCodes[4][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[4][3],TypeCodeText[4][3]))))         
-        file_tc5_submenu.addAction(QtWidgets.QAction(TypeCodes[4][4].split(' ',1)[0], self, 
+        file_tc5_submenu.addAction(QAction(TypeCodes[4][4].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[4][4],TypeCodeText[4][4])))) 
-        file_tc5_submenu.addAction(QtWidgets.QAction(TypeCodes[4][5].split(' ',1)[0], self, 
+        file_tc5_submenu.addAction(QAction(TypeCodes[4][5].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[4][5],TypeCodeText[4][5])))) 
         
         file_tc6_submenu = file_submenu.addMenu("Tolerances and Errors Type Codes")
-        file_tc6_submenu.addAction(QtWidgets.QAction(TypeCodes[5][0].split(' ',1)[0], self, 
+        file_tc6_submenu.addAction(QAction(TypeCodes[5][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[5][0],TypeCodeText[5][0])))) 
-        file_tc6_submenu.addAction(QtWidgets.QAction(TypeCodes[5][1].split(' ',1)[0], self, 
+        file_tc6_submenu.addAction(QAction(TypeCodes[5][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[5][1],TypeCodeText[5][1])))) 
-        file_tc6_submenu.addAction(QtWidgets.QAction(TypeCodes[5][2].split(' ',1)[0], self, 
+        file_tc6_submenu.addAction(QAction(TypeCodes[5][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[5][2],TypeCodeText[5][2])))) 
-        file_tc6_submenu.addAction(QtWidgets.QAction(TypeCodes[5][3].split(' ',1)[0], self, 
+        file_tc6_submenu.addAction(QAction(TypeCodes[5][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[5][3],TypeCodeText[5][3]))))         
-        file_tc6_submenu.addAction(QtWidgets.QAction(TypeCodes[5][4].split(' ',1)[0], self, 
+        file_tc6_submenu.addAction(QAction(TypeCodes[5][4].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[5][4],TypeCodeText[5][4])))) 
-        file_tc6_submenu.addAction(QtWidgets.QAction(TypeCodes[5][5].split(' ',1)[0], self, 
+        file_tc6_submenu.addAction(QAction(TypeCodes[5][5].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[5][5],TypeCodeText[5][5])))) 
         
         file_tc7_submenu = file_submenu.addMenu("Space Charge Type Codes")
-        file_tc7_submenu.addAction(QtWidgets.QAction(TypeCodes[6][0].split(' ',1)[0], self, 
+        file_tc7_submenu.addAction(QAction(TypeCodes[6][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[6][0],TypeCodeText[6][0])))) 
-        file_tc7_submenu.addAction(QtWidgets.QAction(TypeCodes[6][1].split(' ',1)[0], self, 
+        file_tc7_submenu.addAction(QAction(TypeCodes[6][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[6][1],TypeCodeText[6][1])))) 
         
         file_tc8_submenu = file_submenu.addMenu("Output Print Type Codes")
-        file_tc8_submenu.addAction(QtWidgets.QAction(TypeCodes[7][0].split(' ',1)[0], self, 
+        file_tc8_submenu.addAction(QAction(TypeCodes[7][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[7][0],TypeCodeText[7][0])))) 
-        file_tc8_submenu.addAction(QtWidgets.QAction(TypeCodes[7][1].split(' ',1)[0], self, 
+        file_tc8_submenu.addAction(QAction(TypeCodes[7][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[7][1],TypeCodeText[7][1])))) 
-        file_tc8_submenu.addAction(QtWidgets.QAction(TypeCodes[7][2].split(' ',1)[0], self, 
+        file_tc8_submenu.addAction(QAction(TypeCodes[7][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[7][2],TypeCodeText[7][2])))) 
-        file_tc8_submenu.addAction(QtWidgets.QAction(TypeCodes[7][3].split(' ',1)[0], self, 
+        file_tc8_submenu.addAction(QAction(TypeCodes[7][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[7][3],TypeCodeText[7][3]))))         
+        file_tc8_submenu.addAction(QAction(TypeCodes[7][4].split(' ',1)[0], self, 
+            triggered=(lambda: self.help_TypeCodes(TypeCodes[7][4],TypeCodeText[7][4]))))         
         
         file_tc9_submenu = file_submenu.addMenu("Output Plot Type Codes")
-        file_tc9_submenu.addAction(QtWidgets.QAction(TypeCodes[8][0].split(' ',1)[0], self, 
+        file_tc9_submenu.addAction(QAction(TypeCodes[8][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[8][0],TypeCodeText[8][0])))) 
-        file_tc9_submenu.addAction(QtWidgets.QAction(TypeCodes[8][1].split(' ',1)[0], self, 
+        file_tc9_submenu.addAction(QAction(TypeCodes[8][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[8][1],TypeCodeText[8][1])))) 
-        file_tc9_submenu.addAction(QtWidgets.QAction(TypeCodes[8][2].split(' ',1)[0], self, 
+        file_tc9_submenu.addAction(QAction(TypeCodes[8][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[8][2],TypeCodeText[8][2])))) 
-        file_tc9_submenu.addAction(QtWidgets.QAction(TypeCodes[8][3].split(' ',1)[0], self, 
+        file_tc9_submenu.addAction(QAction(TypeCodes[8][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[8][3],TypeCodeText[8][3])))) 
-        file_tc9_submenu.addAction(QtWidgets.QAction(TypeCodes[8][4].split(' ',1)[0], self, 
-            triggered=(lambda: self.help_TypeCodes(TypeCodes[8][4],TypeCodeText[8][4])))) 
-
+        file_tc9_submenu.addAction(QAction(TypeCodes[8][4].split(' ',1)[0], self, 
+            triggered=(lambda: self.help_TypeCodes(TypeCodes[8][4],TypeCodeText[8][4]))))
         
         file_tc10_submenu = file_submenu.addMenu("Other Type Codes")
-        file_tc10_submenu.addAction(QtWidgets.QAction(TypeCodes[9][0].split(' ',1)[0], self, 
+        file_tc10_submenu.addAction(QAction(TypeCodes[9][0].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[9][0],TypeCodeText[9][0])))) 
-        file_tc10_submenu.addAction(QtWidgets.QAction(TypeCodes[9][1].split(' ',1)[0], self, 
+        file_tc10_submenu.addAction(QAction(TypeCodes[9][1].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[9][1],TypeCodeText[9][1])))) 
-        file_tc10_submenu.addAction(QtWidgets.QAction(TypeCodes[9][2].split(' ',1)[0], self, 
+        file_tc10_submenu.addAction(QAction(TypeCodes[9][2].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[9][2],TypeCodeText[9][2])))) 
-        file_tc10_submenu.addAction(QtWidgets.QAction(TypeCodes[9][3].split(' ',1)[0], self, 
+        file_tc10_submenu.addAction(QAction(TypeCodes[9][3].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[9][3],TypeCodeText[9][3]))))         
-        file_tc10_submenu.addAction(QtWidgets.QAction(TypeCodes[9][4].split(' ',1)[0], self, 
+        file_tc10_submenu.addAction(QAction(TypeCodes[9][4].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[9][4],TypeCodeText[9][4])))) 
-        file_tc10_submenu.addAction(QtWidgets.QAction(TypeCodes[9][5].split(' ',1)[0], self, 
+        file_tc10_submenu.addAction(QAction(TypeCodes[9][5].split(' ',1)[0], self, 
             triggered=(lambda: self.help_TypeCodes(TypeCodes[9][5],TypeCodeText[9][5]))))
         
         # About menu
         file_menu = bar.addMenu('About')
         # adding actions to the about menu
-        aboutdg_action = QtWidgets.QAction('About DGUI', self, 
+        aboutdg_action = QAction('About DGUI', self, 
                 statusTip="About DGUI", triggered=self.about_dgui)
         file_menu.addAction(aboutdg_action)
-        versions_list = QtWidgets.QAction('List software versions', self,
+        versions_list = QAction('List software versions', self,
                 statusTip="List versions of installed software", triggered=self.list_versions)
         file_menu.addAction(versions_list)
 
@@ -1911,7 +2036,26 @@ class MainWindow(QMainWindow):
         self.force_close = True
         close_action.triggered.connect(lambda: self.close_dgui("dgui"))
         close_all.triggered.connect(lambda: self.close_dgui("all"))
-
+ 
+    def moveEvent(self, event):
+        global mw_pos_x, mw_pos_y, screen_sz_x, screen_sz_y
+        oldScreen = QtWidgets.QApplication.screenAt(event.oldPos())
+        newScreen = QtWidgets.QApplication.screenAt(event.pos())
+        mw_pos_x = self.pos().x()
+        mw_pos_y = self.pos().y()
+        #screen_sz_x = newScreen.size().width()
+        #screen_sz_y = newScreen.size().height()        
+        #mouse_state == QtCore.Qt.NoButton
+        #print("DBX mouse= ",QtWidgets.QApplication.mouseButtons()) 
+        #print("DBX Qt mouse= ", Qt.MouseButton.NoButton)        
+        if (not oldScreen == newScreen and newScreen is not None):        
+            if (DBX == True):                
+                print("DBX POS     =",self.pos().x(),self.pos().y())          
+                print("DBX SIZE    =",newScreen.size().width(),newScreen.size().height())
+                #print("DBX PX ratio=",newScreen.devicePixelRatio())
+            screen_sz_x = newScreen.size().width()
+            screen_sz_y = newScreen.size().height()                
+        return super().moveEvent(event)
         
     def closeEvent(self, event):            
         if self.force_close is True:
@@ -2051,7 +2195,7 @@ class MainWindow(QMainWindow):
 #        menu.addAction(self.cutAct)
 #        menu.addAction(self.copyAct)
 #        menu.addAction(self.pasteAct)
-        menu.exec_(event.globalPos())
+        menu.exec(event.globalPos())
         
     def createActions(self):
         self.printAct = QAction("&Print window to file...", self, shortcut="Ctrl+P",
@@ -2133,17 +2277,16 @@ class MainWindow(QMainWindow):
             else:    
                 sw0_prefix = sys.platform + ' ' + mac_os_names[vindex] + ' '                                       
         else:        
-            plotit_exe = dynpath[:-4] + "plot" + os.sep + "dynplt"
-            dynac_exe = dynpath[:-1] + os.sep + dynacv
+            plotit_exe = '"' + dynpath[:-4] + 'plot' + os.sep + 'dynplt"'
+            dynac_exe  = '"' + dynpath[:-1] + os.sep + dynacv + '"' 
             sw0_prefix = ''            
-#        print("plotit binary: ",plotit_exe)                          
-        cmd = plotit_exe + " -v"
+        #print("plotit binary: ",plotit_exe)
+        #print("dynac  binary: ",dynac_exe)        
+        cmd = plotit_exe + ' -v'
         sw_version = os.popen(cmd)
         psw1 = sw_version.read().rstrip("\n")
-        #print("Checked dyndat   version:",psw1)
         sw_version.close() 
 
-#        print("dynac binary: ",dynac_exe)                          
         cmd = dynac_exe + " -v"
         sw_version = os.popen(cmd)
         dsw1 = sw_version.read().rstrip("\n")
@@ -2198,14 +2341,21 @@ class MainWindow(QMainWindow):
 #                cmd='"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"' + ' /n ' +  default_ugpath + os.sep + 'dynac_UG.pdf'
                 cmd = r'"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"'
                 argmnt1 =  ' /n '  
-                argmnt2 =  default_ugpath + os.sep + 'dynac_UG.pdf'                
-            else:   
-                print("Can not find ",path_to_acro)
-                print("Trying AcroRd32.exe") 
-#                cmd='"AcroRd32.exe" "' + default_ugpath + os.sep + "dynac_UG.pdf" + '"'
-                cmd='"AcroRd32.exe"'
-                argmnt1 =  ' /n '  
-                argmnt2 =  default_ugpath + os.sep + 'dgui_UG.pdf'               
+                argmnt2 =  default_ugpath + os.sep + 'dynac_UG.pdf'       
+            else:            
+                path_to_acro = r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"
+                file_exists = exists(path_to_acro)  
+                if (file_exists) :
+                    cmd = r'"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"'
+                    argmnt1 =  ' /n '  
+                    argmnt2 =  default_ugpath + os.sep + 'dynac_UG.pdf'                  
+                else:   
+                    print("Can not find ",path_to_acro)
+                    print("Trying AcroRd32.exe") 
+#                    cmd='"AcroRd32.exe" "' + default_ugpath + os.sep + "dynac_UG.pdf" + '"'
+                    cmd='"AcroRd32.exe"'
+                    argmnt1 =  ' /n '  
+                    argmnt2 =  default_ugpath + os.sep + 'dgui_UG.pdf'               
         if (platform.system() == 'Linux') :
             #print("linux dynac PDF with acr, evi, xrd ",acr_selected,evi_selected,xrd_selected)
             if (acr_selected == True) :
@@ -2224,7 +2374,7 @@ class MainWindow(QMainWindow):
             self.dynugpdf = QtCore.QProcess()
             self.dynugpdf.finished.connect(self.dynugpdf_finished)  # Clean up once complete.
             if (platform.system() == 'Windows') :
-#                print("Opening DYNAC UG with: ",cmd,argmnt1,argmnt2)
+                #print("DBX Opening DYNAC UG with: ",cmd,argmnt1,argmnt2)
                 self.dynugpdf.start(cmd,[argmnt1,argmnt2])
             else:
 #                print("Opening DYNAC UG with: ",cmd,argmnts)
@@ -2246,13 +2396,20 @@ class MainWindow(QMainWindow):
                 cmd = r'"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"'
                 argmnt1 =  ' /n '  
                 argmnt2 =  default_ugpath + os.sep + 'dgui_UG.pdf'
-            else:   
-                print("Can not find ",path_to_acro)
-                print("Trying AcroRd32.exe") 
-#                cmd='"AcroRd32.exe" "' + default_ugpath + os.sep + "dgui_UG.pdf" + '"'
-                cmd='"AcroRd32.exe"' 
-                argmnt1 =  ' /n '  
-                argmnt2 =  default_ugpath + os.sep + 'dgui_UG.pdf'               
+            else:            
+                path_to_acro = r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"
+                file_exists = exists(path_to_acro)  
+                if (file_exists) :
+                    cmd = r'"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"'
+                    argmnt1 =  ' /n '  
+                    argmnt2 =  default_ugpath + os.sep + 'dgui_UG.pdf'                  
+                else:   
+                    print("Can not find ",path_to_acro)
+                    print("Trying AcroRd32.exe") 
+#                    cmd='"AcroRd32.exe" "' + default_ugpath + os.sep + "dgui_UG.pdf" + '"'
+                    cmd='"AcroRd32.exe"' 
+                    argmnt1 =  ' /n '  
+                    argmnt2 =  default_ugpath + os.sep + 'dgui_UG.pdf'               
         if (platform.system() == 'Linux') :
             #print("linux dynac PDF with acr, evi, xrd",acr_selected,evi_selected,xrd_selected)
             if (acr_selected == True) :
@@ -2287,7 +2444,7 @@ class MainWindow(QMainWindow):
     def about_dgui(self):
 ## DYNAC GUI User Guide is assumed to be in ..../dynac/help directory
         txt1= "DGUI is a graphical user interface to the beam dynamics code DYNAC. "
-        txt2= dguiv + " works best with DYNAC V7R4 and with python3.10 or newer."
+        txt2= dguiv + " works best with DYNAC V7R5 and with python3.10 or newer."
         abouttxt = txt1 + txt2
         QMessageBox.about(self, "About DGUI", abouttxt)
 
@@ -2321,40 +2478,43 @@ class MainLayout(QWidget):
             self.top_line2.setText("Project: " + os.path.normpath(prdir))
             self.top_line2.resize(750,25)
             self.top_line2.move(125, 18) 
-             
-#        self.top_DGUIV = QtWidgets.QLabel(self)
-#        self.top_DGUIV.setText(dgui_v)
-#        self.top_DGUIV.resize(200,25)
-#        self.top_DGUIV.move(1030, 6)        
 
         # Add OPTIONS button
         self.PlotBtn7 = QtWidgets.QPushButton('Options', self)
         self.PlotBtn7.resize(100,32)
-        self.PlotBtn7.move(5, 5)                
+        self.PlotBtn7.move(5, 5) 
+        self.PlotBtn7.setStyleSheet("background-color : white")        
         self.LeftBtn1 = QtWidgets.QPushButton('Get dist. file', self)
         self.LeftBtn1.resize(100,32)
         self.LeftBtn1.move(5, 50)        
+        self.LeftBtn1.setStyleSheet("background-color : white")        
         self.LeftBtn2 = QtWidgets.QPushButton('Get input file', self)
         self.LeftBtn2.resize(100,32)
-        self.LeftBtn2.move(5, 100)        
+        self.LeftBtn2.move(5, 100)
+        self.LeftBtn2.setStyleSheet("background-color : white")        
 
         self.text_box1 = QtWidgets.QTextEdit(self)
         self.text_box1.resize(750,44)
-        self.text_box1.move(120, 44)        
+        self.text_box1.move(120, 44) 
+        self.text_box1.setStyleSheet("QTextEdit { background-color: white ; border: 1px solid black;}")         
         self.text_box2 = QtWidgets.QTextEdit(self)
         self.text_box2.resize(750,44)
         self.text_box2.move(120, 94)
-
+        self.text_box2.setStyleSheet("QTextEdit { background-color: white ; border: 1px solid black;}")         
+        
         self.RightBtn0 = QtWidgets.QPushButton('Save project', self)
         self.RightBtn0.resize(100,32)
-        self.RightBtn0.move(880, 5)        
+        self.RightBtn0.move(880, 5)
+        self.RightBtn0.setStyleSheet("background-color : white")         
         self.RightBtn1 = QtWidgets.QPushButton('Plot dist. file', self)
         self.RightBtn1.resize(100,32)
         self.RightBtn1.move(880, 50)        
+        self.RightBtn1.setStyleSheet("background-color : white")         
         self.RightBtn2 = QtWidgets.QPushButton('Run DYNAC', self)
         self.RightBtn2.resize(100,32)
         self.RightBtn2.move(880, 100)        
-                
+        self.RightBtn2.setStyleSheet("background-color : white") 
+        
         self.save_button = QtWidgets.QPushButton('Save')
         self.clear_button = QtWidgets.QPushButton('Clear')
         
@@ -2377,10 +2537,13 @@ class MainLayout(QWidget):
         self.radio1.setGeometry(QtCore.QRect(10, 20, 110, 25))
         self.radio1.setText("Distribution")
         self.radio1.setChecked(True)
+        self.radio1.setStyleSheet("QRadioButton::indicator:checked{"   "width:10px;height:10px;" "border-radius:8px;" "background-color:white;" "border:3px solid blue;" "}")
+#                                  "QRadioButton::indicator:unchecked{" "width:12px;height:12px;" "border-radius:8px;" "background-color:green;" "border:3px solid black;" "}")         
         # Add R radio button (coordinates within groupBox)
         self.radio2 = QRadioButton(self.groupBox1)
         self.radio2.setGeometry(QtCore.QRect(140, 20, 90, 25))
         self.radio2.setText("Density")
+        self.radio2.setStyleSheet("QRadioButton::indicator:checked{"   "width:10px;height:10px;" "border-radius:8px;" "background-color:white;" "border:3px solid blue;" "}")        
         # Add L check box (coordinates within groupBox)        
         self.checkBox1 = QCheckBox(self.groupBox1)
         self.checkBox1.setGeometry(QtCore.QRect(10, 45, 90, 25))
@@ -2400,49 +2563,60 @@ class MainLayout(QWidget):
         # Add plotit button 
         self.PlotBtn1 = QtWidgets.QPushButton('plotit', self)
         self.PlotBtn1.resize(75,32)
-        self.PlotBtn1.move(975, 150)        
+        self.PlotBtn1.move(975, 150)  
+        self.PlotBtn1.setStyleSheet("background-color : white")        
         # Add close plotit windows button 
         self.PlotBtn1s = QtWidgets.QPushButton('Save', self)
         self.PlotBtn1s.resize(75,32)
-        self.PlotBtn1s.move(1052, 150)        
+        self.PlotBtn1s.move(1052, 150) 
+        self.PlotBtn1s.setStyleSheet("background-color : white")        
         # Add close plotit windows button 
         self.PlotBtn1c = QtWidgets.QPushButton('Close gnuplots', self)
         self.PlotBtn1c.resize(116,32)
-        self.PlotBtn1c.move(1129, 150)        
+        self.PlotBtn1c.move(1129, 150) 
+        self.PlotBtn1c.setStyleSheet("background-color : white")        
         # Add plot Erms button 
         self.PlotBtn2 = QtWidgets.QPushButton('Plot Erms', self)
         self.PlotBtn2.resize(127,32)
-        self.PlotBtn2.move(975, 200)        
+        self.PlotBtn2.move(975, 200) 
+        self.PlotBtn2.setStyleSheet("background-color : white")        
         # Add plot W button 
         b3txt="Plot W," + "\N{GREEK SMALL LETTER PHI}"
         self.PlotBtn3 = QtWidgets.QPushButton(b3txt, self)
         self.PlotBtn3.resize(127,32)
-        self.PlotBtn3.move(975, 250)        
+        self.PlotBtn3.move(975, 250) 
+        self.PlotBtn3.setStyleSheet("background-color : white")        
         # Add plot envelopes button 
         self.PlotBtn4 = QtWidgets.QPushButton('Plot X,Y env.', self)
         self.PlotBtn4.resize(127,32)
-        self.PlotBtn4.move(975, 300)        
+        self.PlotBtn4.move(975, 300)
+        self.PlotBtn4.setStyleSheet("background-color : white")        
         # Add plot dW button 
         b5txt="Plot dW,d" + "\N{GREEK SMALL LETTER PHI}" + " env."
         self.PlotBtn5 = QtWidgets.QPushButton(b5txt, self)
         self.PlotBtn5.resize(127,32)
-        self.PlotBtn5.move(975, 350)        
+        self.PlotBtn5.move(975, 350)
+        self.PlotBtn5.setStyleSheet("background-color : white")        
         # Add plot dispersion button 
         self.PlotBtn6 = QtWidgets.QPushButton('Plot dispersion', self)
         self.PlotBtn6.resize(127,32)
         self.PlotBtn6.move(975, 400)
+        self.PlotBtn6.setStyleSheet("background-color : white")        
         # Add Plot all 7 plots button
         self.PlotBtn28 = QtWidgets.QPushButton('Plot all 7 plots', self)
         self.PlotBtn28.resize(127,32)
-        self.PlotBtn28.move(975, 550)               
+        self.PlotBtn28.move(975, 550)  
+        self.PlotBtn28.setStyleSheet("background-color : white")        
         # Add Save plots button
         self.PlotBtn18 = QtWidgets.QPushButton('Save visible plots', self)
         self.PlotBtn18.resize(127,32)
-        self.PlotBtn18.move(975, 600)               
+        self.PlotBtn18.move(975, 600) 
+        self.PlotBtn18.setStyleSheet("background-color : white")        
         # Add Close plots button
         self.PlotBtn8 = QtWidgets.QPushButton('Close plots', self)
         self.PlotBtn8.resize(127,32)
-        self.PlotBtn8.move(1105, 600)               
+        self.PlotBtn8.move(1105, 600)
+        self.PlotBtn8.setStyleSheet("background-color : white")        
         # Add plot transmission button 
         b9txt ="Plot x\u0304 , y\u0304 , TX"
 #        b9txt = 'Plot <font><span style="text-decoration: overline">X</span></font>, <font><span style="text-decoration: overline">Y</span></font>, TX'
@@ -2450,10 +2624,12 @@ class MainLayout(QWidget):
         self.PlotBtn9 = QtWidgets.QPushButton(b9txt, self)
         self.PlotBtn9.resize(127,32)
         self.PlotBtn9.move(975, 450)
+        self.PlotBtn9.setStyleSheet("background-color : white")        
         # Add plot losses button 
         self.PlotBtn12 = QtWidgets.QPushButton('Plot losses', self)
         self.PlotBtn12.resize(127,32)
-        self.PlotBtn12.move(975,500)         
+        self.PlotBtn12.move(975,500)
+        self.PlotBtn12.setStyleSheet("background-color : white")        
                        
         # Add plot Env check box (coordinates within groupBox)        
         self.checkBox4 = QCheckBox(self.groupBox3)
@@ -2492,10 +2668,11 @@ class MainLayout(QWidget):
                 # Add R button 2 call back
         self.RightBtn2.clicked.connect(self.run_dyn)
         self.RightBtn2.setToolTip('Run DYNAC using the input file') 
-        self.RightBtn2.setStyleSheet("color : #0000ff; ")        
+        self.RightBtn2.setStyleSheet("background-color : white;" "color : #0000ff;")
+       
         # Add radio button 1 call back
         self.radio1.clicked.connect(self.get_r1)
-        self.radio1.setToolTip('If selected and Dst selected, macro particles will be plotted')  
+        self.radio1.setToolTip('If selected and Dst selected, macro particles will be plotted')         
         # Add radio button 2 call back
         self.radio2.clicked.connect(self.get_r2)
         self.radio2.setToolTip('If selected, density plots will be displayed')  
@@ -2520,11 +2697,13 @@ class MainLayout(QWidget):
         # Add plotit button call back
         self.PlotBtn1.clicked.connect(self.plotit)
         self.PlotBtn1.setToolTip('Display the plots requested in the DYNAC input file')  
-        self.PlotBtn1.setStyleSheet("color : #0000ff; ") 
+#        self.PlotBtn1.setStyleSheet("color : #0000ff; ") 
+        self.PlotBtn1.setStyleSheet("background-color : white;" "color : #0000ff;")        
         # Add save gnuplots button call back
         self.PlotBtn1s.clicked.connect(self.splotit)
         self.PlotBtn1s.setToolTip('Save the plots requested in the DYNAC input file')  
-        self.PlotBtn1s.setStyleSheet("color : #0000ff; ") 
+#        self.PlotBtn1s.setStyleSheet("color : #0000ff; ") 
+        self.PlotBtn1s.setStyleSheet("background-color : white;" "color : #0000ff;")      
         # Add close plotit windows button call back
         self.PlotBtn1c.clicked.connect(self.close_gnuplots)
         self.PlotBtn1c.setToolTip('Close the gnuplots created by plotit')  
@@ -2568,8 +2747,10 @@ class MainLayout(QWidget):
         # big text box at bottomgraphicsView where info will be logged
         self.inpLog = QtWidgets.QTextEdit(self)
 #        self.inpLog = QtWidgets.QPlainTextEdit(self)
-        self.inpLog.resize(960, 520)
+        self.inpLog.resize(960, 515)
         self.inpLog.move(10, 145)
+        self.inpLog.setStyleSheet("QTextEdit { background-color: white ; border: 1px solid black;}")  
+        
 # Change font, colour of big text box
 #        self.inpLog.setStyleSheet(
 #        """QPlainTextEdit {background-color: #333;
@@ -2609,7 +2790,13 @@ class MainLayout(QWidget):
     def select_opt(self):
         '''Select options and preferences'''
         self.selectopt = Options(self)
-        self.selectopt.move(1270, 20)
+        #place the options window near to the main window; for this, get the current 
+        #position of the main window. It may be on another screen than where it was opened. 
+        if (mw.pos().x() + mw_sz_x + 10 + ow_sz_x < tot_screen_width ): 
+            ow_px = mw.pos().x() + mw_sz_x + 10
+        else:
+            ow_px = mw.pos().x() - ow_sz_x - 10        
+        self.selectopt.move(ow_px, mw.pos().y() )
         self.selectopt.show()
 
 ######################################################
@@ -2799,8 +2986,9 @@ class MainLayout(QWidget):
 #         "Distribution files (*.dst);;Text files (*.txt);;All files (*.*)")
         filedialog = QFileDialog(self,"Open file",last_dfpath,"Distribution files (*.dst);;Text files (*.txt);;All files (*.*)")
         filedialog.setFixedSize(900,440)
+        filedialog.move(mw.pos().x(), mw.pos().y() )        
         filedialog.fileSelected.connect(self.dstfileSelected)
-        filedialog.show()     
+        filedialog.show()   
 
 ######################################################
     def inpfileSelected(self, fname2):               #
@@ -2838,6 +3026,7 @@ class MainLayout(QWidget):
 #         "Input files (*.in);;Data files (*.dat);;Text files (*.txt);;All files (*.*)")
         filedialog = QFileDialog(self,"Open file",last_ifpath,"Input files (*.in);;Data files (*.dat);;Text files (*.txt);;All files (*.*)")
         filedialog.setFixedSize(900,440)
+        filedialog.move(mw.pos().x(), mw.pos().y() )          
         filedialog.fileSelected.connect(self.inpfileSelected)
         filedialog.show()     
 
@@ -3170,6 +3359,7 @@ class MainLayout(QWidget):
             dialog.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
             dialog.setOption(QtWidgets.QFileDialog.Option.ShowDirsOnly, True)
             dialog.setViewMode(QtWidgets.QFileDialog.ViewMode.Detail)
+            dialog.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))            
             dialog.setWindowTitle("Select where to save project files in automatically generated sub-directories")
             if dialog.exec() :
                 dname3 = dialog.selectedFiles()
@@ -3263,9 +3453,18 @@ class MainLayout(QWidget):
         Theta = np.linspace(0,2*pi,npoints)
         XPoints = np.zeros((npoints),float)
         YPoints = np.zeros((npoints),float)
-        m11=math.sqrt(math.fabs(TWISS[1]))
-        m21=-TWISS[0]/math.sqrt(math.fabs(TWISS[1]))
-        m22=1/math.sqrt(math.fabs(TWISS[1]))
+        if(math.fabs(TWISS[1]) > 0.):
+            m11=math.sqrt(math.fabs(TWISS[1]))
+            #print("DBX gen_ellips > 0 ",m11,math.fabs(TWISS[1]))        
+            m21=-TWISS[0]/math.sqrt(math.fabs(TWISS[1]))
+            m22=1/math.sqrt(math.fabs(TWISS[1]))
+            m11=math.sqrt(math.fabs(TWISS[1]))
+        else:        
+            TWISS[1]=0.000000001
+            m11=10000.0            
+            #print("DBX gen_ellips = 0 ",m11,math.fabs(TWISS[1]))                
+            m21=-TWISS[0]/m11
+            m22=1/m11          
         Radius=math.sqrt(math.fabs(TWISS[3]))
         rmsmul = math.sqrt(TWISS[4])
         m12=0.
@@ -3289,12 +3488,12 @@ class MainLayout(QWidget):
 #        print("Using data (??) from: ",dfname)
         if(dfname == ""):
             self.get_dst()
-#        print("Using data from: ",dfname)
+#        print("DBX Using data from: ",dfname)
 #        print('n_of_KDE_bins in print dist=',n_of_KDE_bins)
 
         if(dfname):
             try:
-#                print("Plotting " + dfname)
+                #print("DBX Plotting " + dfname)
                 mytime = '{0:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())
                 mytitle = "DYNAC " + mytime + "      " + dfname
                 # read the first line
@@ -3378,9 +3577,17 @@ class MainLayout(QWidget):
                 self.win.setStyleSheet('background-color: white;')
 #               setGeometry(pos left, pos top, width, height)
                 self.win.setGeometry(100, 100, 1180, 800)
+                self.win.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))                
+                if (mw.pos().x() + mw_sz_x + 50 + 1180 < tot_screen_width ): 
+                    dw_px = mw.pos().x() + mw_sz_x + 50
+                else:
+                    dw_px = mw.pos().x() - 1180 - 50                        
+                             
+                
+                self.win.move(dw_px, mw.pos().y() + 50 )                
 #                stitle = '<div style="text-align: center"><span style="color: #000000; font-size: 14pt;"><b>Particle distribution plots for ' + str(noprtcls) + ' macro-particles</b></span></div>'
                 stitle = "Particle distribution plots for " + str(noprtcls) + " macro-particles"
-               
+#                print("DBX title=",stitle)
                 self.win.horizontalGroupBox = QGroupBox(stitle)
                 self.win.horizontalGroupBox.setAlignment(Qt.AlignmentFlag.AlignCenter)
 #red font:      self.win.horizontalGroupBox.setStyleSheet('color: #FF2222; font-weight: bold; font-size: 18px')
@@ -3659,6 +3866,7 @@ class MainLayout(QWidget):
                     zpmax = 1.001 * zpmax
                     zpmin = 0.999 * zpmin
                 # Get the LUT corresponding to the selected colormap
+                #print("DBX getting CM_LUT")
                 cm_lut(colormap_name,1)
                 rown=0
 #                self.win.setWindowTitle('plotWidget title') <- use this to update the window title
@@ -3968,6 +4176,7 @@ class MainLayout(QWidget):
                 vticksz1 = 0.
                 vticksz2 = 0.
                 vticksz3 = 0.
+                #print("DBX check if density plot needed")
                 if(self.radio2.isChecked() != 0 ): 
                     # Density plots
 #        # Setup scaling of colorbar (next, implement it as an ImageItem)
@@ -4584,7 +4793,7 @@ class MainLayout(QWidget):
 #                        binvaly[i] = (binvaly[i]/binmay)*(xmax-xmin)/fit_amp
 #                        binvalx[i] = (binvalx[i]/binmax)*(xpmax-xpmin)/fit_amp
                         binvaly[i] = (binvaly[i]/binmay)*(xranges[0][1]-xranges[0][0])/fit_amp
-                        binvalx[i] = (binvalx[i]/binmax)*(xranges[1][1]-xranges[1][0])/fit_amp
+                        binvalx[i] = (binvalx[i]/binmax)*(xranges[1][1]-xranges[1][0])/fit_amp   
                     profxraw = pd.Series(binctrx)
                     profyraw = pd.Series(binvalx) 
                     profx = pd.Series(binctrx)
@@ -4831,8 +5040,16 @@ class MainLayout(QWidget):
                     binctry={}
                     binvalx={}
                     binvaly={}
-                    histx, bin_edgex  = np.histogram(myDataFrame["z"],  density=False, bins=nbins)
-                    histy, bin_edgey  = np.histogram(myDataFrame["zp"], density=False, bins=nbins)
+                    # selecting rows based on condition                    
+                    if(COG_selected == True):                    
+                        rslt_df = myDataFrame[(myDataFrame["z"] > zmean+zranges[0][0]) & ( myDataFrame["z"] < zmean+zranges[0][1]) & (myDataFrame["zp"] > zpmean+zranges[1][0]) & ( myDataFrame["zp"] < zpmean+zranges[1][1])]                    
+                    else:
+                        if(GRS=="File"):                    
+                            rslt_df = myDataFrame[(myDataFrame["z"] > zranges[0][0]) & ( myDataFrame["z"] < zranges[0][1]) & (myDataFrame["zp"] > zranges[1][0]) & ( myDataFrame["zp"] < zranges[1][1])]                                        
+                        else:                        
+                            rslt_df = myDataFrame                    
+                    histx, bin_edgex  = np.histogram(rslt_df["z"],  density=False, bins=nbins)
+                    histy, bin_edgey  = np.histogram(rslt_df["zp"], density=False, bins=nbins)                    
                     binmax=float(histx[0])
                     binmay=float(histy[0])
                     binmix=float(histx[0])
@@ -4855,11 +5072,11 @@ class MainLayout(QWidget):
 #                        binvaly[i] = (binvaly[i]/binmay)*(zmax-zmin)/fit_amp
 #                        binvalx[i] = (binvalx[i]/binmax)*(zpmax-zpmin)/fit_amp
                         binvaly[i] = (binvaly[i]/binmay)*(zranges[0][1]-zranges[0][0])/fit_amp
-                        binvalx[i] = (binvalx[i]/binmax)*(zranges[1][1]-zranges[1][0])/fit_amp
+                        binvalx[i] = (binvalx[i]/binmax)*(zranges[1][1]-zranges[1][0])/fit_amp                      
                     profxraw = pd.Series(binctrx)
                     profyraw = pd.Series(binvalx)
                     profx = pd.Series(binctrx)
-                    profy = pd.Series(binvalx) 
+                    profy = pd.Series(binvalx)
                     # make estimate of where center of Gaussian is; need to correct for offset in y
                     if(pro_fit != 0 ):   
                         slop = (profy.values[len(profy.values)-1]-profy.values[0])/(profx.values[len(profx.values)-1]-profx.values[0])
@@ -4874,7 +5091,7 @@ class MainLayout(QWidget):
                             mod = Model(gaussian) 
                             pars = mod.make_params(amp=ampl, cen=xbar, wid=width, lof=loff)
                             result = mod.fit(profy.values, pars, x=profx.values)
-#                        print(result.fit_report())
+                            #print("DBX phase",result.fit_report())
                             flof = result.best_values['lof']
                             famp = result.best_values['amp']
                             fcen = result.best_values['cen']
@@ -4923,11 +5140,12 @@ class MainLayout(QWidget):
                             mod = Model(gaussian) 
                             pars = mod.make_params(amp=ampl, cen=xbar, wid=width, lof=loff)
                             result = mod.fit(profy.values, pars, x=profx.values)
-#                        print(result.fit_report())
+                            #print("DBX energy",result.fit_report())
                             flof = result.best_values['lof']
                             famp = result.best_values['amp']
                             fcen = result.best_values['cen']
                             fwid = result.best_values['wid']
+                            #print("DBX fitted vals",flof,famp,fcen,fwid)                       
                             if(rangezp and GRS=="File"):                    
                                 del profx
                                 del profy
@@ -4937,13 +5155,18 @@ class MainLayout(QWidget):
                                 binvalx={}
                                 step = bin_edgey[1]-bin_edgey[0]
                                 nfbins = int((zpvals[1]-zpvals[0])/step)
-                                step = (zpmax-zpmin)/nfbins
+                                step = (zranges[1][1]-zranges[1][0])/nfbins
+                                #print("DBX prep fit to be plotted ",nfbins,step,zranges[1][0],zranges[1][1])                                
                                 for i in range(0,nfbins):
-                                    binctrx[i] = zpmin + step/2 + i * step
+                                    #binctrx[i] = zpmin + step/2 + i * step
+                                    binctrx[i] = zranges[1][0] + step/2 + i * step
                                     if(COG_selected == True and self.radio2.isChecked() != 0 and KDE_selected != 0):
                                         binvalx[i] = flof + famp * exp(-(binctrx[i])**2 / (2*fwid**2))
-                                    else:    
+                                    elif(COG_selected == True):
+                                        binvalx[i] = flof + famp * exp(-(binctrx[i])**2 / (2*fwid**2))                                    
+                                    else:
                                         binvalx[i] = flof + famp * exp(-(binctrx[i]-fcen)**2 / (2*fwid**2))
+#                                print("DBX actual fit to be plotted ",binctrx,binvalx)                                           
                                 profx = pd.Series(binctrx)
                                 profy = pd.Series(binvalx)
 #                                if(COG_selected == True  and KDE_selected != 0):
@@ -4952,8 +5175,10 @@ class MainLayout(QWidget):
 #                                    p3.plot(vticksz3 + zranges[0][0] + profy.values, cogzp + profx.values, pen='g')
                                 if(COG_selected == True  and self.radio2.isChecked() != 0 and KDE_selected != 0):
                                     p3.plot(vticksz3 + zranges[0][0] + profy.values, profx.values, pen='g')
+                                elif(COG_selected == True):
+                                    p3.plot(vticksz3 + zranges[0][0] + profy.values, profx.values, pen='g')                                                                       
                                 else:
-                                    p3.plot(vticksz3 + zranges[0][0] + profy.values, cogzp + profx.values, pen='g')
+                                    p3.plot(vticksz3 + zranges[0][0] + profy.values, cogzp + profx.values, pen='g')                                   
                             else:
                                 p3.plot(vticksz3 + zranges[0][0] + result.best_fit, cogzp + profxraw.values, pen='g')
                     if(pro_raw != 0 ): 
@@ -4967,11 +5192,18 @@ class MainLayout(QWidget):
                                 p3.plot(vticksz3 + zranges[0][0] + profyraw.values, cogzp + profxraw.values, pen=yellow)
                             else:
                                 p3.plot(vticksz3 + zranges[0][0] + profyraw.values, cogzp + profxraw.values, pen='r')
+                if (mw.pos().x() + mw_sz_x + 10 + ow_sz_x < tot_screen_width ): 
+                    ow_px = mw.pos().x() + mw_sz_x + 10
+                else:
+                    ow_px = mw.pos().x() - ow_sz_x - 10        
+                self.win.move(ow_px, mw.pos().y() + 100 )       
                 self.win.show()
-            except:
+            except Exception as EC:
+                print("Error code ",EC)
                 msg3 = QMessageBox(self)
-                msg3.setWindowTitle("Error Message")                                 
-                msg3.setText("Failed to read file\n'%s'" % dfname)
+                msg3.setWindowTitle("Error Message")
+                #msg3.setText("Failed to read file\n'%s'" % dfname)                
+                msg3.setText(EC)
                 msg3.setIcon(QMessageBox.Icon.Critical)
                 msg3.exec()                                                                  
 #            print("Test: already done?")                                    
@@ -5020,6 +5252,7 @@ class MainLayout(QWidget):
 #                self.win1 = pg.GraphicsLayoutWidget(title=mytitle, show=True)
 
                 self.win1.resize(1000,700)
+                self.win1.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))                
                 stitle = "Erms as a function of position"
 #            self.win.setWindowTitle('plotWidget title') <- use this to update the window title
                 self.win1.addLabel(stitle, row=0, col=0, size='12pt')
@@ -5087,7 +5320,7 @@ class MainLayout(QWidget):
                 mytime = '{0:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())
                 mytitle = "DYNAC " + mytime + "      " + pfname
                 # read the data, filter out the lines that contain the # character, and convert to numbers
-                dmpDataFrame = pd.read_csv(dmpfname, skiprows=3, sep=r'\s+', header=None, comment='#',names=["element", "Z", "trans", "PHIs", "TOF(COG)", "Beta(COG)", "Wcog", "TOF(REF)", "Beta(REF)", "Wref", "Ex,RMS,n", "Ey,RMS,n", "El,RMS", "dWref", "EffVolt","ElementName"])
+                dmpDataFrame = pd.read_csv(dmpfname, skiprows=3, sep=r'\s+', header=None, comment='#',names=["element", "Z", "trans", "PHIs", "TOF(COG)", "Beta(COG)", "Wcog", "TOF(REF)", "Beta(REF)", "Wref", "Ex,RMS,n", "Ey,RMS,n", "El,RMS", "dWref", "EffVolt","ElementName","FieldAmplitude"])
 #                dmpDataFrame=dmpDataFrame[~dmpDataFrame.element.str.contains("#")]
 #                if(dmpDataFrame.dtypes.element == 'object'): dmpDataFrame=dmpDataFrame[~dmpDataFrame.element.str.contains("#")]
 #                dmpDataFrame=dmpDataFrame.apply(pd.to_numeric, errors='coerce')
@@ -5116,6 +5349,7 @@ class MainLayout(QWidget):
                 
 #                self.win2 = pg.GraphicsLayoutWidget(title=mytitle, show=True)
                 self.win2.resize(1000,700)
+                self.win2.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))                
                 stitle = "Energy and synchronous phase as a function of position"
 #            self.win.setWindowTitle('plotWidget title') <- use this to update the window title
                 self.win2.addLabel(stitle, row=0, col=0, size='12pt')
@@ -5204,6 +5438,7 @@ class MainLayout(QWidget):
                 
 #                self.win7 = pg.GraphicsLayoutWidget(title=mytitle, show=True)
                 self.win7.resize(1000,700)
+                self.win7.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))                
                 stitle = "Beam losses along beam line elements"
                 self.win7.addLabel(stitle, row=0, col=0, size='12pt')
                 pg.setConfigOptions(antialias=True)
@@ -5451,6 +5686,7 @@ class MainLayout(QWidget):
                
 #                self.win3 = pg.GraphicsLayoutWidget(title=mytitle, show=True)
                 self.win3.resize(1000,700)
+                self.win3.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))                
                 stitle = "No plots selected"
                 if (self.checkBox4.isChecked() != 0 ):   
                     stitle = "RMS beam size"
@@ -5889,8 +6125,9 @@ class MainLayout(QWidget):
                     print("You seem to be running Python ",sys.version_info[0],".",sys.version_info[1])                   
                     print("You need to be running Python > 3.4") 
                 
-#                self.win4 = pg.GraphicsLayoutWidget(title=mytitle, show=True)
-                self.win4.resize(1000,700)
+
+                self.win4.resize(1000,700) 
+                self.win4.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png')) 
                 stitle = "No plots selected"
                 if (self.checkBox4.isChecked() != 0 ):   
                     stitle = "RMS beam size"
@@ -5992,6 +6229,7 @@ class MainLayout(QWidget):
                     print("You need to be running Python > 3.4") 
                 
 #                self.win5 = pg.GraphicsLayoutWidget(title=mytitle, show=True)
+                self.win5.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))
                 self.win5.resize(1000,700)
                 stitle = "Dispersion as a function of position"
 #            self.win.setWindowTitle('plotWidget title') <- use this to update the window title
@@ -6080,6 +6318,7 @@ class MainLayout(QWidget):
                 
 #                self.win6 = pg.GraphicsLayoutWidget(title=mytitle, show=True)
                 self.win6.resize(1000,700)
+                self.win6.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))                
                 stitle = "Centroids and transmission as a function of position"
 #            self.win.setWindowTitle('plotWidget title') <- use this to update the window title
                 self.win6.addLabel(stitle, row=0, col=0, size='12pt')
@@ -6135,6 +6374,7 @@ class MainLayout(QWidget):
             ndynpath= dynpath[:-5] + os.sep
             doplotit = '"' + ndynpath + "plot" + os.sep + "dynplt" + '"'
             plotitopt = "w"
+            os.environ["QT_SCALE_FACTOR"] = str(scaleFactor)            
 #            doplotit = os.path.abspath(doplotit)
         if (platform.system() == 'Linux') :
             doplotit = dynpath[0:-4] + os.sep + "plot" + os.sep + "dynplt"
@@ -6279,7 +6519,8 @@ class MainLayout(QWidget):
                 dynopt="-p" + ifpath
             ifname=self.text_box2.toPlainText() 
             if(ifname == ""):
-                self.get_inp()
+# 2025 next line not needed because dynac already does this                
+#                self.get_inp()
                 if (platform.system() == 'Windows') :
                     lastsep=ifname.rfind(os.sep)
 #                    newifpath='"' + ifname[0:lastsep+1] + '"'
@@ -6351,6 +6592,9 @@ class MainLayout(QWidget):
                 self.inpLog.setTextCursor(self.cursor)        
                 self.inpLog.insertPlainText(pincome)
         else:
+            self.pos1=self.cursor.position()         
+            self.cursor.setPosition(self.pos1, QTextCursor.MoveMode.KeepAnchor)       
+            self.inpLog.setTextCursor(self.cursor) 
             self.inpLog.insertPlainText(pincome)
 
 ######################################################
@@ -6375,7 +6619,7 @@ class MainLayout(QWidget):
     def dynraw_done(self):                           #
 ######################################################
         #dynac execution done; change button color back to blue    
-        self.RightBtn2.setStyleSheet("color : #0000ff; ") 
+        self.RightBtn2.setStyleSheet("background-color : white;" "color : #0000ff;")        
         self.inpLog.insertPlainText("\n")                
         self.inpLog.insertPlainText("\n")                
         self.inpLog.verticalScrollBar().setValue(self.inpLog.verticalScrollBar().maximum())
@@ -6385,17 +6629,20 @@ class MainLayout(QWidget):
     def plotitraw_done(self):                        #
 ######################################################
         #plotit execution done; change button color back to blue    
-        self.PlotBtn1.setStyleSheet("color : #0000ff; ") 
+        self.PlotBtn1.setStyleSheet("background-color : white;" "color : #0000ff;")          
         self.inpLog.insertPlainText("\n")                
         self.inpLog.insertPlainText("\n")                
         self.inpLog.verticalScrollBar().setValue(self.inpLog.verticalScrollBar().maximum())
         self.inpLog.repaint()
+        if (platform.system() == 'Windows') :
+            os.environ["QT_SCALE_FACTOR"] = str(1./scaleFactor)            
+        
 
 ######################################################
     def splotitraw_done(self):                        #
 ######################################################
-        #plotit execution done; change button color back to blue    
-        self.PlotBtn1s.setStyleSheet("color : #0000ff; ") 
+        #plotit execution done; change button color back to blue     
+        self.PlotBtn1s.setStyleSheet("background-color : white;" "color : #0000ff;")         
         self.inpLog.insertPlainText("\n")                
         self.inpLog.insertPlainText("\n")                
         self.inpLog.verticalScrollBar().setValue(self.inpLog.verticalScrollBar().maximum())
@@ -6453,9 +6700,26 @@ class MainLayout(QWidget):
 
 
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)    
+    tot_screen_width = 0  
+    #DBX = True    
+    #print("DBX Display new1: ", QApplication.screens())    
+    #print("DBX Display new2: ", QApplication.primaryScreen().availableGeometry())    
+    for scrn in QApplication.screens():
+        #sizeObject = QtWidgets.QDesktopWidget().screenGeometry(displayNr)
+        #tot_screen_width = tot_screen_width + sizeObject.width()    
+        scr_width  = scrn.size().width()
+        scr_height = scrn.size().height()        
+        ascr_width  = scrn.availableSize().width()
+        ascr_height = scrn.availableSize().height()         
+        tot_screen_width = tot_screen_width + scr_width
+        if (DBX == True):         
+            print("DBX Display: " + str(QApplication.screens().index(scrn)) + " Screen size : " + str(scr_height) + "x" + str(scr_width))    
+            #print("DBX Availbl: " + str(QApplication.screens().index(scrn)) + " Screen size : " + str(ascr_height) + "x" + str(ascr_width))    
+    if (DBX == True): print("DBX total display width: ", tot_screen_width)   
+       
     if (platform.system() == 'Darwin') :
-        app.setFont(QFont('Helvetica Neue',13))
+        app.setFont(QFont('Helvetica Neue',13))        
 # next shows icon in tray top of MAC, bottom if linux or windows (if tray at bottom)
 #        trayIcon = QtWidgets.QSystemTrayIcon()
 #        trayIcon.setIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))
@@ -6463,16 +6727,22 @@ if __name__ == '__main__':
 #        trayIcon.show()
 #        app.QSystemTrayIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'), app).show()
 # next shows icon in dock at bottom     
-#    app.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))
-#    app.setToolTip('DGUI')
-#    app.setWindowIconText('DGUI')
+        app.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))
+        #app.setToolTip('DGUI')
+        #app.setWindowIconText('DGUI')
     # creating main window
     mw = MainWindow()
-# add the icon add the top left of the window    
-    mw.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))    
+# add the icon add the top left of the window 
+    #print("DBX current dir ",os.getcwd())  
+    mw.setWindowFilePath(dynpath.strip())     
+    #mw.setWindowIcon(QtGui.QIcon(":" + dynpath.strip()  + os.sep + 'dynicon.png'))
+    mw.setWindowIcon(QtGui.QIcon(dynpath.strip()  + os.sep + 'dynicon.png'))
+    #QtCore.QDir.addSearchPath('icons', dynpath.strip()  + os.sep)
+    #dynacicon = QtGui.QIcon('icons:dynicon.png')
+    #mw.setWindowIcon(dynacicon)
+    mw.setWindowIconText('DGUI')    
     mw.move(10, 20)
     mw.show()
-#    sys.exit(app.exec_())
     sys.exit(app.exec())
     
    

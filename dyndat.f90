@@ -18,7 +18,7 @@
         common/fichier/filenm,pfnm
         common/fpath/ppath
         common/iopsys/iopsy,termtype,ltt,s2gr
-        common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
+        common/chstat1/cst(2000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/pscl/yminsk,iskale
         common/files/fname,lpath
@@ -26,12 +26,12 @@
         common/gui/dgui
         common/p2d/xxpar(100,100), yypar(100,100), xyar(100,100), &
                    zzpar(100,100), zxar(100,100), zyar(100,100)
-        DIMENSION dx(1000002),dxp(1000002),data(10)
+        DIMENSION dx(2000002),dxp(2000002),data(10)
         parameter (backslash="\\")
         dimension icstat(20),zstat(20)
-        dimension cx(1000002),cxp(1000002),ctrx1(1000002),ctry1(1000002)
-        dimension cy(1000002),cyp(1000002),ctrx2(1000002),ctry2(1000002)
-        dimension cz(1000002),czp(1000002),ctrx3(1000002),ctry3(1000002)
+        dimension cx(2000002),cxp(2000002),ctrx1(2000002),ctry1(2000002)
+        dimension cy(2000002),cyp(2000002),ctrx2(2000002),ctry2(2000002)
+        dimension cz(2000002),czp(2000002),ctrx3(2000002),ctry3(2000002)
         common/wfil20/xmin(10),xmax(10),ymin(10),ymax(10)
         common/wfil120/xxpmax,yypmax,xymax,zzpmax,zxmax,zymax,ndx,ndy,bex
         common/mingw/mg
@@ -73,7 +73,9 @@
 !       printed with more significant digits.
 ! V3R4  Fixed issue with vertical position of titles for some X11 plots 
 ! V3R5  Updated to be compatible with gnuplot v6.0, e.g. -noraise option no longer valid
-!
+! V3R6  Replaced "call command" calls with newer "call EXECUTE_COMMAND_LINE" calls. For 
+!       profiles with logarithmic scale, changed format from F type to E type to allow
+!       for larger range. Changed from 1M to 2M macro-particles.
 !
 ! if mg=.true., use MINGW on windows, which has a different result for ctime function than
 ! standard gfortran
@@ -91,7 +93,7 @@
         termtype=''
         sepa=''
         narg=0
-        vtext='PLOTIT V3R5 28-Dec-2024'
+        vtext='PLOTIT V3R6 27-Jul-2025'
         DO
           call get_command_argument(narg, inarg, length, istat)
           larg(narg+1)=LEN_TRIM(inarg)
@@ -250,8 +252,8 @@
         write(6,*)
 ! igrtyp is type of graph (there is no igrtyp=8,9,10,13,14,15,20,21,23,24,25,26)
 ! single charge state, no zones:
-!        igrtyp=1  for xx'-yy'-xy-zz' plots
-!        igrtyp=2  for zx-zy plots & profiles
+!        igrtyp=1  for xx'-yy'-xy-zz' plots   (EMITGR)
+!        igrtyp=2  for zx-zy plots & profiles (PROFGR)
 !        igrtyp=3  for xz-yz envelopes
 !        igrtyp=4  for dW envelope
 !        igrtyp=5  for dPHI envelope
@@ -318,27 +320,27 @@
 !          command(1:40)="test ! -e savedplots && mkdir savedplots"
           if(llpath.eq.0)then
             command="test ! -e savedplots && mkdir savedplots"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           else
             command="test ! -e "//ppath(1:llpath)//"savedplots && mkdir "//ppath(1:llpath)//"savedplots"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           endif
         else
 ! WINDOWS
           if(llpath.eq.0)then
             command="if not exist savedplots\\*.* echo creating plots directory"
-            CALL System(trim(COMMAND))
+            call EXECUTE_COMMAND_LINE(trim(COMMAND))
             command="if not exist savedplots\\*.* mkdir savedplots"
-            CALL System(trim(COMMAND))
+            call EXECUTE_COMMAND_LINE(trim(COMMAND))
             command="if not exist savedplots\\*.* copy ..\\bin\\tst savedplots"
-            CALL System(trim(COMMAND))
+            call EXECUTE_COMMAND_LINE(trim(COMMAND))
           else
             command="if not exist "//ppath(1:llpath)//"savedplots\*.* "//"echo creating plots directory" 
             lcmd=len_trim(command)          
-            CALL System(COMMAND(1:lcmd))
+            call EXECUTE_COMMAND_LINE(COMMAND(1:lcmd))
             command="if not exist "//ppath(1:llpath)//"savedplots\*.* "//"mkdir "//ppath(1:llpath)//"savedplots" 
             lcmd=len_trim(command)          
-            CALL System(COMMAND(1:lcmd))
+            call EXECUTE_COMMAND_LINE(COMMAND(1:lcmd))
           endif
         endif
         command=""
@@ -364,7 +366,7 @@
           read(66,*) yminsk
         ENDIF
         IF (igrtyp.eq.1 .or. igrtyp.eq.6 .or. igrtyp.eq.11) THEN
-! x-x', y-y', x-y, z-z' plots
+! x-x', y-y', x-y, z-z' plots (EMITGR)
           data(2)=data(2)+1.
           data(5)=igrtyp
           nplot=int(data(2))
@@ -484,12 +486,12 @@
             command=''
             !command="gnuplot -noraise -geometry 500x515-250+25 "//trim(ppath)//"dynac.gnu"
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           elseif(iopsy.eq.3) then
 ! MAC
             command=''
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           else
 ! WINDOWS
             command=''
@@ -498,11 +500,11 @@
             else  
               command="wgnuplot "//trim(ppath)//"dynac.gnu"
             endif  
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           endif
         ENDIF
         IF (igrtyp.eq.2 .or. igrtyp.eq.7 .or. igrtyp.eq.12) THEN
-! z-x, z-y distribution plots & profiles
+! z-x, z-y distribution plots & profiles (PROFGR)
           data(5)=igrtyp
           data(2)=data(2)+1.
           nplot=int(data(2))
@@ -639,12 +641,12 @@
             command=''
             !command="gnuplot -noraise -geometry 500x515-250+25 "//trim(ppath)//"dynac.gnu"
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           elseif(iopsy.eq.3) then
 ! MAC
             command=''
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           else
 ! WINDOWS
             command=''
@@ -653,7 +655,7 @@
             else  
               command="wgnuplot "//trim(ppath)//"dynac.gnu"
             endif  
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           endif
         ENDIF
         IF (igrtyp.eq.18) THEN
@@ -761,12 +763,12 @@
             command=''
             !command="gnuplot -noraise -geometry 500x515-250+25 "//trim(ppath)//"dynac.gnu"
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           elseif(iopsy.eq.3) then
 ! MAC
             command=''
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           else
 ! WINDOWS
             command=''
@@ -775,7 +777,7 @@
             else  
               command="wgnuplot "//trim(ppath)//"dynac.gnu"
             endif  
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           endif
         ENDIF
         IF (igrtyp.eq.16) THEN
@@ -854,12 +856,12 @@
             command=''
             !command="gnuplot -noraise -geometry 500x515-250+25 "//trim(ppath)//"dynac.gnu"
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           elseif(iopsy.eq.3) then
 ! MAC
             command=''
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           else
 ! WINDOWS
             command=''
@@ -868,7 +870,7 @@
             else  
               command="wgnuplot "//trim(ppath)//"dynac.gnu"
             endif  
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           endif
         ENDIF
         IF (igrtyp.eq.3) THEN
@@ -904,12 +906,12 @@
             command=''
             !command="gnuplot -noraise -geometry 500x515-250+25 "//trim(ppath)//"dynac.gnu"
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           elseif(iopsy.eq.3) then
 ! MAC
             command=''
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           else
 ! WINDOWS
             command=''
@@ -918,7 +920,7 @@
             else  
               command="wgnuplot "//trim(ppath)//"dynac.gnu"
             endif  
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           endif
         ENDIF
         IF (igrtyp.eq.4) THEN
@@ -948,12 +950,12 @@
             command=''
             !command="gnuplot -noraise -geometry 500x515-250+25 "//trim(ppath)//"dynac.gnu"
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           elseif(iopsy.eq.3) then
 ! MAC
             command=''
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           else
 ! WINDOWS
             command=''
@@ -962,7 +964,7 @@
             else  
               command="wgnuplot "//trim(ppath)//"dynac.gnu"
             endif  
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           endif
         ENDIF
         IF (igrtyp.eq.5) THEN
@@ -992,12 +994,12 @@
             command=''
             !command="gnuplot -noraise -geometry 500x515-250+25 "//trim(ppath)//"dynac.gnu"
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           elseif(iopsy.eq.3) then
 ! MAC
             command=''
             command="gnuplot "//trim(ppath)//"dynac.gnu"
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           else
 ! WINDOWS
             command=''
@@ -1006,7 +1008,7 @@
             else  
               command="wgnuplot "//trim(ppath)//"dynac.gnu"
             endif  
-            CALL System(trim(command))
+            call EXECUTE_COMMAND_LINE(trim(command))
           endif
         ENDIF
 ! ask if the file should be saved when plotit is called from the terminal,
@@ -1031,7 +1033,7 @@
         implicit real(8) (a-h,o-z)
         common/iopsys/iopsy,termtype,ltt,s2gr
         common/fpath/ppath
-        dimension x(1000002),xp(1000002),cx(300),cy(300)
+        dimension x(2000002),xp(2000002),cx(300),cy(300)
         character(len=280) :: command
         character(len=256) :: ppath,fwpath
         character(len=16) :: termtype
@@ -1044,7 +1046,7 @@
 ! WINDOWS
           command="if exist "//trim(ppath)//"dynac.cnt del "//trim(ppath)//"dynac.cnt"
         endif
-        CALL System(COMMAND)
+        call EXECUTE_COMMAND_LINE(COMMAND)
         fwpath=''
         fwpath=trim(ppath)//"dynac.cnt"
         OPEN(unit=48,file=trim(fwpath))
@@ -1060,7 +1062,7 @@
 ! WINDOWS
           command="if exist "//trim(ppath)//"dynac.plt del "//trim(ppath)//"dynac.plt"
         endif
-        CALL System(COMMAND)
+        call EXECUTE_COMMAND_LINE(COMMAND)
         fwpath=''
         fwpath=trim(ppath)//"dynac.plt"
         OPEN(unit=49,file=trim(fwpath))
@@ -1106,7 +1108,7 @@
           command=""
           command="if exist "//trim(ppath)//"dynac.gnu del "//trim(ppath)//"dynac.gnu"
         endif
-        CALL System(COMMAND)
+        call EXECUTE_COMMAND_LINE(COMMAND)
         if (isave.eq.0) then
           fwpath=''
           fwpath=trim(ppath)//"dynac.gnu"
@@ -1332,7 +1334,7 @@
         implicit real(8) (a-h,o-z)
         common/iopsys/iopsy,termtype,ltt,s2gr
         common/fpath/ppath
-        dimension x(1000002),xp(1000002),y(1000002),yp(1000002)
+        dimension x(2000002),xp(2000002),y(2000002),yp(2000002)
         character(len=256) :: ppath,fwpath
         character(len=280) :: command
         character(len=16) :: termtype
@@ -1345,7 +1347,7 @@
 ! WINDOWS
           command="if exist "//trim(ppath)//"dynac.plt del "//trim(ppath)//"dynac.plt"
         endif
-        CALL System(COMMAND)
+        call EXECUTE_COMMAND_LINE(COMMAND)
         fwpath=''
         fwpath=trim(ppath)//"dynac.plt"
         OPEN(unit=48,file=trim(fwpath))
@@ -1365,11 +1367,11 @@
         common/fichier/filenm,pfnm
         common/fpath/ppath
         common/iopsys/iopsy,termtype,ltt,s2gr
-        common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
+        common/chstat1/cst(2000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/grtyp/igrtyp
-        dimension x(1000002),xp(1000002),y(1000002),yp(1000002)
-        dimension z(1000002),zp(1000002)
+        dimension x(2000002),xp(2000002),y(2000002),yp(2000002)
+        dimension z(2000002),zp(2000002)
         character(len=256) :: ppath,fwpath
         character(len=255), dimension(20) :: pfnm
         character(len=280) :: command
@@ -1386,7 +1388,7 @@
 ! WINDOWS
             command="if exist "//trim(ppath)//"dynac.cnt del "//trim(ppath)//"dynac.cnt"
           endif
-          CALL System(COMMAND)
+          call EXECUTE_COMMAND_LINE(COMMAND)
           fwpath=''
           fwpath=trim(ppath)//"dynac.cnt"
           OPEN(unit=51,file=trim(fwpath))
@@ -1406,7 +1408,7 @@
 ! WINDOWS
               command="if exist "//trim(ppath)//"dynac.plt del "//trim(ppath)//"dynac.plt"
             endif
-            CALL System(trim(COMMAND))
+            call EXECUTE_COMMAND_LINE(trim(COMMAND))
 !            OPEN(unit=52,file='dynac.plt')
             fwpath=''
             fwpath=trim(ppath)//"dynac.plt"
@@ -1445,12 +1447,12 @@
 ! LINUX or MAC
                   command=''
                   command="rm -f "//trim(ppath)//trim(pfnm(j))
-                  CALL System(trim(COMMAND))
+                  call EXECUTE_COMMAND_LINE(trim(COMMAND))
                 else
 ! WINDOWS
                   command=''
                   command="if exist "//trim(ppath)//trim(pfnm(j))//" del "//trim(ppath)//trim(pfnm(j))
-                  CALL System(trim(COMMAND))
+                  call EXECUTE_COMMAND_LINE(trim(COMMAND))
                 endif
                 fcstat(mcstat)=cstat(j)
                 if(iopsy.le.3) then
@@ -1481,10 +1483,10 @@
         common/fichier/filenm,pfnm
         common/fpath/ppath
         common/iopsys/iopsy,termtype,ltt,s2gr
-        common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
+        common/chstat1/cst(2000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/grtyp/igrtyp
-        dimension x(1000002),xp(1000002),y(1000002),yp(1000002)
+        dimension x(2000002),xp(2000002),y(2000002),yp(2000002)
         character(len=256) :: ppath,fwpath
         character(len=255), dimension(20) :: pfnm
         character(len=280) :: command
@@ -1502,7 +1504,7 @@
 ! WINDOWS
             command="if exist "//trim(ppath)//"dynac.plt del "//trim(ppath)//"dynac.plt"
           endif
-          CALL System(trim(COMMAND))
+          call EXECUTE_COMMAND_LINE(trim(COMMAND))
           if(iopsy.le.3) then
             fwpath=''
             fwpath=trim(ppath)//"dynac.plt"
@@ -1543,12 +1545,12 @@
               if(iopsy.eq.1 .or. iopsy.eq.3) then
 ! LINUX or MAC
                 command="rm -f "//trim(ppath)//trim(pfnm(j))
-                CALL System(trim(COMMAND))                                
+                call EXECUTE_COMMAND_LINE(trim(COMMAND))                                
               else
 ! WINDOWS
                 command=''
                 command="if exist "//trim(ppath)//trim(pfnm(j))//" del "//trim(ppath)//trim(pfnm(j))
-                CALL System(trim(COMMAND))                                
+                call EXECUTE_COMMAND_LINE(trim(COMMAND))                                
               endif
               fcstat(mcstat)=cstat(j)
               if(iopsy.le.3) then
@@ -1580,7 +1582,7 @@
         common/fichier/filenm,pfnm
         common/fpath/ppath
         common/iopsys/iopsy,termtype,ltt,s2gr
-        common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
+        common/chstat1/cst(2000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/pscl/yminsk,iskale
         common/gui/dgui
@@ -1614,7 +1616,7 @@
 ! WINDOWS
           command="if exist "//trim(ppath)//"dynac.gnu del "//trim(ppath)//"dynac.gnu"
         endif
-        CALL System(COMMAND)
+        call EXECUTE_COMMAND_LINE(COMMAND)
         if(isave.eq.0) then
           if(iopsy.le.3) then
             fwpath=''
@@ -2046,7 +2048,7 @@
         ymin2=0.
         if(iskale.eq.1) then
           if (yminsk.gt.0. .and. yminsk.lt.1.) then
-            ymin2=yminsk
+            ymin2=yminsk 
           else
             write(6,*) '***         Error in logscale          ***'
             write(6,*) '** log scale minimum defaults to 1.E-06 **'
@@ -2064,7 +2066,7 @@
           write(50,9012)
         endif
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin2,xmax2
-        write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin2,ymax2
+        write(50,"('set yrange [',E10.4,':',f12.6,']')") ymin2,ymax2
         if(iopsy.eq.1) then
 ! LINUX        
           if(s2gr) then
@@ -2168,10 +2170,10 @@
         labels4="N (normalized)"
         xmin2=-5.
         xmax2=5.
-        ymin2=0.
+        ymin2=0.		
         if(iskale.eq.1) then
           if (yminsk.gt.0. .and. yminsk.lt.1.) then
-            ymin2=yminsk
+            ymin2=yminsk  
           else
             ymin2=1.e-6
           endif
@@ -2187,7 +2189,7 @@
           write(50,9012)
         endif
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin2,xmax2
-        write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin2,ymax2
+        write(50,"('set yrange [',E10.4,':',f12.6,']')") ymin2,ymax2
         if(iopsy.eq.1) then
           if(s2gr) then
             write(50,"('set key at screen 0.55, 0.17 spacing 0.9', &
@@ -2384,7 +2386,7 @@
 ! WINDOWS
           command="if exist "//trim(ppath)//"dynac.gnu del "//trim(ppath)//"dynac.gnu"
         endif
-        CALL System(COMMAND)
+        call EXECUTE_COMMAND_LINE(COMMAND)
         if(isave.eq.0) then
 !          OPEN(unit=50,file='dynac.gnu')
           fwpath=''
@@ -2414,7 +2416,6 @@
         txt=''
         txt='set terminal '//termtype(1:ltt)
 ! number the plot window 
-!2020debug
         cfn='000'
         cpn=''
         if(ipn+1.lt.10) then
@@ -2620,7 +2621,7 @@
           write(50,9012)
         endif
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin2,xmax2
-        write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin2,ymax2
+        write(50,"('set yrange [',E10.4,':',f12.6,']')") ymin2,ymax2
         if(iopsy.eq.1) then
           if(s2gr) then
             write(50,"('set key at screen 0.545, 0.45 spacing 0.9', &
@@ -2715,7 +2716,7 @@
           write(50,9012)
         endif
         write(50,"('set xrange [',f8.2,':',f8.2,']')") xmin2,xmax2
-        write(50,"('set yrange [',f12.6,':',f12.6,']')") ymin2,ymax2
+        write(50,"('set yrange [',E10.4,':',f12.6,']')") ymin2,ymax2
         if(iopsy.eq.1) then
           if(s2gr) then
             write(50,"('set key at screen 0.545, 0.19 spacing 0.9', &
@@ -2836,7 +2837,7 @@
         character(len=3) :: cpn,cfn
         character(len=2) :: backslash
         common/prtcnt/imax
-        common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
+        common/chstat1/cst(2000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/wfil2/title,labels
         common/fichier/filenm,pfnm
@@ -2890,7 +2891,7 @@
           endif          
           command="if exist "//trim(ppath)//"dynac.gnu del "//trim(ppath)//"dynac.gnu"
         endif
-        CALL System(trim(COMMAND))
+        call EXECUTE_COMMAND_LINE(trim(COMMAND))
         IF (isave.eq.0) then
           fwpath=''
           fwpath=trim(ppath)//"dynac.gnu"
@@ -3580,7 +3581,7 @@
 ! WINDOWS
           command="if exist "//trim(ppath)//"dynac.gnu del "//trim(ppath)//"dynac.gnu"
         endif
-        CALL System(COMMAND)
+        call EXECUTE_COMMAND_LINE(COMMAND)
         IF (isave.eq.0) then
           fwpath=''
           fwpath=trim(ppath)//"dynac.gnu"
@@ -3965,7 +3966,7 @@
         common/wfil120/xxpmax,yypmax,xymax,zzpmax,zxmax,zymax,ndx,ndy,bex
         common/fichier/filenm,pfnm
         common/iopsys/iopsy,termtype,ltt,s2gr
-        common/chstat1/cst(1000002),cstat(20),fcstat(20),ncstat,mcstat
+        common/chstat1/cst(2000002),cstat(20),fcstat(20),ncstat,mcstat
         common/chstat2/cccst
         common/pscl/yminsk,iskale
         common/files/fname,lpath
@@ -4013,9 +4014,9 @@
             close(50)
             close(51)
             command(1:18)="gnuplot dynacp.gnu"
-            CALL System(COMMAND(1:18))
+            call EXECUTE_COMMAND_LINE(COMMAND(1:18))
             command(1:13)="lpr dynac.ps"
-            CALL System(COMMAND(1:13))
+            call EXECUTE_COMMAND_LINE(COMMAND(1:13))
           endif
         elseif (fsave.eq.'y' .or. fsave.eq.'Y') then
 ! filename format: sXMmmDDYYYYHHMMSSaa.eee (see user guide)
@@ -4029,21 +4030,21 @@
 ! LINUX or MAC
                 command(1:24)="cp dynac.plt savedplots/"
                 command(25:45)=filenm(1:21)
-                CALL System(COMMAND(1:45))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:45))
                 filenm(18:21)='.cnt'
                 command(1:24)="cp dynac.cnt savedplots/"
                 command(25:45)=filenm(1:21)
-                CALL System(COMMAND(1:45))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:45))
               else
 ! WINDOWS
                 command(1:25)="copy dynac.plt savedplots"
                 command(26:26)=backslash
                 command(27:47)=filenm(1:21)
-                CALL System(COMMAND(1:47))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:47))
                 filenm(18:21)='.cnt'
                 command(1:25)="copy dynac.cnt savedplots"
                 command(27:47)=filenm(1:21)
-                CALL System(COMMAND(1:47))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:47))
               endif
             else
               if(iopsy.eq.1 .or. iopsy.eq.3) then
@@ -4055,12 +4056,12 @@
                   command(4:14)=pfnm(j)
                   command(15:26)=' savedplots/'
                   command(27:49)=filenm(1:23)
-                  CALL System(COMMAND(1:49))
+                  call EXECUTE_COMMAND_LINE(COMMAND(1:49))
                 enddo
                 filenm(18:21)='.cnt'
                 command(1:24)="cp dynac.cnt savedplots/"
                 command(25:45)=filenm(1:21)
-                CALL System(COMMAND(1:45))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:45))
               else
 ! WINDOWS
                 do j=1,mcstat
@@ -4071,13 +4072,13 @@
                   command(17:27)=' savedplots'
                   command(28:28)=backslash
                   command(29:51)=filenm(1:23)
-                  CALL System(COMMAND(1:51))
+                  call EXECUTE_COMMAND_LINE(COMMAND(1:51))
                 enddo
                 filenm(18:21)='.cnt'
                 command(1:25)="copy dynac.cnt savedplots"
                 command(26:26)=backslash
                 command(27:47)=filenm(1:21)
-                CALL System(COMMAND(1:47))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:47))
               endif
             endif
           ENDIF
@@ -4090,13 +4091,13 @@
 ! LINUX or MAC
                 command(1:24)="cp dynac.plt savedplots/"
                 command(25:45)=filenm(1:21)
-                CALL System(COMMAND(1:45))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:45))
               else
 ! WINDOWS
                 command(1:25)="copy dynac.plt savedplots"
                 command(26:26)=backslash
                 command(27:47)=filenm(1:21)
-                CALL System(COMMAND(1:47))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:47))
               endif
             else
               if(iopsy.eq.1 .or. iopsy.eq.3) then
@@ -4108,7 +4109,7 @@
                   command(4:14)=pfnm(j)
                   command(15:26)=' savedplots/'
                   command(27:49)=filenm(1:23)
-                  CALL System(COMMAND(1:49))
+                  call EXECUTE_COMMAND_LINE(COMMAND(1:49))
                 enddo
               else
 ! WINDOWS
@@ -4120,7 +4121,7 @@
                   command(17:27)=' savedplots'
                   command(28:28)=backslash
                   command(29:51)=filenm(1:23)
-                  CALL System(COMMAND(1:51))
+                  call EXECUTE_COMMAND_LINE(COMMAND(1:51))
                 enddo
               endif
             endif
@@ -4131,27 +4132,27 @@
               command(1:26)="cp dynac01.pro savedplots/"
               filenm(18:19)='01'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac02.pro savedplots/"
               filenm(18:19)='02'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac03.pro savedplots/"
               filenm(18:19)='03'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac04.pro savedplots/"
               filenm(18:19)='04'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac05.pro savedplots/"
               filenm(18:19)='05'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac06.pro savedplots/"
               filenm(18:19)='06'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
             else
 ! WINDOWS
 ! s2Jan14200420535101.pro
@@ -4159,32 +4160,32 @@
               command(28:28)=backslash
               filenm(18:19)='01'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac02.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='02'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac03.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='03'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac04.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='04'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac05.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='05'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac06.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='06'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
             endif
           ENDIF
           IF (igrtyp.eq.3) THEN
@@ -4195,13 +4196,13 @@
 ! LINUX or MAC
               command(1:24)="cp dynac.plt savedplots/"
               command(25:45)=filenm(1:21)
-              CALL System(COMMAND(1:45))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:45))
             else
 ! WINDOWS
               command(1:25)="copy dynac.plt savedplots"
               command(26:26)=backslash
               command(27:47)=filenm(1:21)
-              CALL System(COMMAND(1:47))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:47))
             endif
           ENDIF
           IF (igrtyp.eq.4) THEN
@@ -4212,13 +4213,13 @@
 ! LINUX or MAC
               command(1:24)="cp dynac.plt savedplots/"
               command(25:45)=filenm(1:21)
-              CALL System(COMMAND(1:45))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:45))
             else
 ! WINDOWS
               command(1:25)="copy dynac.plt savedplots"
               command(26:26)=backslash
               command(27:47)=filenm(1:21)
-              CALL System(COMMAND(1:47))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:47))
             endif
           ENDIF
           IF (igrtyp.eq.5) THEN
@@ -4229,13 +4230,13 @@
 ! LINUX or MAC
               command(1:24)="cp dynac.plt savedplots/"
               command(25:45)=filenm(1:21)
-              CALL System(COMMAND(1:45))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:45))
             else
 ! WINDOWS
               command(1:25)="copy dynac.plt savedplots"
               command(26:26)=backslash
               command(27:47)=filenm(1:21)
-              CALL System(COMMAND(1:47))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:47))
             endif
           ENDIF
           IF (igrtyp.eq.16) THEN
@@ -4247,21 +4248,21 @@
 ! LINUX or MAC
                 command(1:24)="cp dynac.plt savedplots/"
                 command(25:45)=filenm(1:21)
-                CALL System(COMMAND(1:45))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:45))
                 filenm(18:21)='.cnt'
                 command(1:24)="cp dynac.cnt savedplots/"
                 command(25:45)=filenm(1:21)
-                CALL System(COMMAND(1:45))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:45))
               else
 ! WINDOWS
                 command(1:25)="copy dynac.plt savedplots"
                 command(26:26)=backslash
                 command(27:47)=filenm(1:21)
-                CALL System(COMMAND(1:47))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:47))
                 filenm(18:21)='.cnt'
                 command(1:25)="copy dynac.cnt savedplots"
                 command(27:47)=filenm(1:21)
-                CALL System(COMMAND(1:47))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:47))
               endif
             else
               if(iopsy.eq.1 .or. iopsy.eq.3) then
@@ -4273,12 +4274,12 @@
                   command(4:14)=pfnm(j)
                   command(15:26)=' savedplots/'
                   command(27:49)=filenm(1:23)
-                  CALL System(COMMAND(1:49))
+                  call EXECUTE_COMMAND_LINE(COMMAND(1:49))
                 enddo
                 filenm(18:21)='.cnt'
                 command(1:24)="cp dynac.cnt savedplots/"
                 command(25:45)=filenm(1:21)
-                CALL System(COMMAND(1:45))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:45))
               else
 ! WINDOWS
                 do j=1,mcstat
@@ -4289,13 +4290,13 @@
                   command(17:27)=' savedplots'
                   command(28:28)=backslash
                   command(29:51)=filenm(1:23)
-                  CALL System(COMMAND(1:51))
+                  call EXECUTE_COMMAND_LINE(COMMAND(1:51))
                 enddo
                 filenm(18:21)='.cnt'
                 command(1:25)="copy dynac.cnt savedplots"
                 command(26:26)=backslash
                 command(27:47)=filenm(1:21)
-                CALL System(COMMAND(1:47))
+                call EXECUTE_COMMAND_LINE(COMMAND(1:47))
               endif
             endif
           ENDIF
@@ -4307,13 +4308,13 @@
 ! LINUX or MAC
               command(1:24)="cp dynac.plt savedplots/"
               command(25:45)=filenm(1:21)
-              CALL System(COMMAND(1:45))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:45))
             else
 ! WINDOWS
               command(1:25)="copy dynac.plt savedplots"
               command(26:26)=backslash
               command(27:47)=filenm(1:21)
-              CALL System(COMMAND(1:47))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:47))
             endif
 ! profiles
             filenm(20:23)='.pro'
@@ -4322,27 +4323,27 @@
               command(1:26)="cp dynac01.pro savedplots/"
               filenm(18:19)='01'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac02.pro savedplots/"
               filenm(18:19)='02'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac03.pro savedplots/"
               filenm(18:19)='03'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac04.pro savedplots/"
               filenm(18:19)='04'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac05.pro savedplots/"
               filenm(18:19)='05'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
               command(1:26)="cp dynac06.pro savedplots/"
               filenm(18:19)='06'
               command(27:49)=filenm(1:23)
-              CALL System(COMMAND(1:49))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:49))
             else
 ! WINDOWS
 ! s2Jan14200420535101.pro
@@ -4350,32 +4351,32 @@
               command(28:28)=backslash
               filenm(18:19)='01'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac02.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='02'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac03.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='03'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac04.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='04'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac05.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='05'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
               command(1:27)="copy dynac06.pro savedplots"
               command(28:28)=backslash
               filenm(18:19)='06'
               command(29:51)=filenm(1:23)
-              CALL System(COMMAND(1:51))
+              call EXECUTE_COMMAND_LINE(COMMAND(1:51))
             endif            
           ENDIF
           write(6,*) ' Saved ',filenm(1:17),' in savedplots directory'
@@ -4406,7 +4407,7 @@
 ! WINDOWS
           command="if exist "//trim(ppath)//"dynac.plt del "//trim(ppath)//"dynac.plt"
         endif
-        CALL System(trim(COMMAND))
+        call EXECUTE_COMMAND_LINE(trim(COMMAND))
         fwpath=''
         fwpath=trim(ppath)//"dynac.plt"
         OPEN(unit=52,file=trim(fwpath))
@@ -4442,7 +4443,7 @@
 ! WINDOWS
           command="if exist "//trim(ppath)//"dynac.plt del "//trim(ppath)//"dynac.plt"
         endif
-        CALL System(trim(COMMAND))
+        call EXECUTE_COMMAND_LINE(trim(COMMAND))
         fwpath=''
         fwpath=trim(ppath)//"dynac.plt"
         OPEN(unit=52,file=trim(fwpath))
