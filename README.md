@@ -11,11 +11,11 @@ DYNAC V8R1 now includes a new space charge routine for DC proton beams. It also 
 
 
 **REQUIRED SOFTWARE FOR DYNAC**  
-DYNAC needs to be compiled with gfortran, which is available from the [gfortran web site](http://gcc.gnu.org/wiki/GFortranBinaries). DYNAC has been successfully tested with gfortran/gcc 15.1.0 and older.
+DYNAC needs to be compiled with gfortran, which is available from the [gfortran web site](http://gcc.gnu.org/wiki/GFortranBinaries). DYNAC has been successfully tested with gfortran/gcc 16.2.0 and older.
 GNU Plot (ZIP format) for WINDOWS can be obtained from the [gnuplot web site](http://sourceforge.net/projects/gnuplot/).
 Using the same link you can find a GNU Plot download for the MAC (download not always required for LINUX, as gnuplot is standard with some flavors of LINUX). On the MAC, it is suggested to install gnuplot with the wxt terminal (e.g. brew install gnuplot --with-wxmac --with-cairo), as it is considerably faster than the aqua terminal and the xquartz/X11 terminal (as it is used by DGUI). 
 
-DYNAC has been succesfully tested on LINUX (Mint 22.2 and older, Red Hat 4.4.7-17 and some older, Kali 2025.3 and Ubuntu 24), MAC (Sequoia, Catalina, Mojave and older) and WINDOWS (11 and older).
+DYNAC has been succesfully tested on LINUX (Mint 22.3 and older, Red Hat 4.4.7-17 and some older, Kali 2025.3 and Ubuntu 24), MAC (Sequoia, Catalina, Mojave and older) and WINDOWS (11 and older).
 
 **OPEN ISSUES (11-Oct-2026)**  
 The charge stripper model requires further development (e.g. energy loss model).
