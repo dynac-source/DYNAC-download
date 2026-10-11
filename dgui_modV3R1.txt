@@ -1,6 +1,3 @@
-
-For MS-W11, place dynicon.png in the C:\Program Files folder (requires administrative rights) in
-order to be able to see it on the W11 taskbar when running DGUI.
 ==================================================================================
 Additions, modifications and corrections for DGUI V3R1 (11-Oct-2026)
 ==================================================================================
