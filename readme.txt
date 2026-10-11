@@ -1,4 +1,4 @@
-DYNAC V8 (WINDOWS and LINUX/MAC versions)                         16-Dec-2025
+DYNAC V8R1 (WINDOWS and LINUX/MAC versions)                       11-Oct-2026
 
 Software License Agreement
 
