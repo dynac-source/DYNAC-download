@@ -1,7 +1,5 @@
 # DYNAC V8R1-download 
 
-!! coming soon: DYNAC V8R1 !!
-
 **DYNAC DOWNLOAD PAGE for DYNAC V8R1, a Multiparticle Beam Simulation Code for linacs and beam transport lines.**  
 LINUX, MAC and WINDOWS downloads for the simulation code DYNAC V8R1 can be found on this page. Instructions for installation after downloading are in the file: [readme.txt](https://github.com/dynac-source/DYNAC-download/blob/main/readme.txt). This file is also contained in the full package below.
 
@@ -54,7 +52,7 @@ An alternative to the above mentioned DYNAC GUI has been developed at [MSU](http
 **DGUI, a DYNAC Graphical User Interface**  
 
 DGUI V3R1 is a Python3 based GUI to DYNAC. Alternatively, the DYNAC code can be exectued from the terminal.  
-DGUI has been tested on LINUX (Mint 22 and older, Ubuntu 24, Kali 2025.03), MAC (Sequoia, Catalina and Mojave) and WINDOWS (11, 10) and works best with DYNAC V8R0.
+DGUI has been tested on LINUX (Mint 22 and older, Ubuntu 24, Kali 2025.03), MAC (Sequoia, Catalina and Mojave) and WINDOWS (11, 10) and works best with DYNAC V8R1.
 Instructions for installation after downloading are in the [DGUI User Guide](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_UG.pdf).    
 Modifications and changes in DGUI V3R1 (11-Oct-2026) as compared to GUI V3R0 are listed in [dgui_modV3R1.txt](https://github.com/dynac-source/DYNAC-download/blob/main/dgui_modV3R1.txt). This file also contains the changes to previous versions.   
 
@@ -71,7 +69,7 @@ DGUI User Guide (pdf format) [DGUI User Guide](https://github.com/dynac-source/D
 Eugene Tanke  
 Email: dynacatgithub at gmail.com  
 
-Updated 10-Oct-2026
+Updated 11-Oct-2026
   
   
 
